@@ -31,17 +31,17 @@ Geometry (all in metres)
 ─────────────────────────
 MCP1:
   grid1  : z = 0.000   MN4: 1238 µm pitch, 32 µm thick, square mesh
-  WP1    : z = 0.010   plane ⊥ z-axis; vertical wires (u = x_local)
-  WP2    : z = 0.035   plane tilted +45° to z-axis; vertical wires (u = x_local).
+  WP1    : z = 0.010   plane ⊥ z-axis; horizontal wires (run along x; u = y_local)
+  WP2    : z = 0.035   plane tilted +45° to z-axis; horizontal wires (u = y_local).
            2.5 cm downstream of WP1.  Wire length √50 cm = 5√2 cm; 5 cm wide in x.
-  WP3    : z = 0.037   plane tilted +45° to z-axis; vertical wires, parallel to WP2.
+  WP3    : z = 0.037   plane tilted +45° to z-axis; horizontal wires, parallel to WP2.
            2 mm downstream of WP2.
 
 MCP2 (upstream side of grid2, z_grid2 = 0.520 m):
-  WP4    : z = z_grid2 - 0.039   plane tilted −45° to z-axis; vertical wires (u = x_local).
+  WP4    : z = z_grid2 - 0.039   plane tilted −45° to z-axis; horizontal wires (u = y_local).
            First in beam order; parallel to WP5, 2 mm upstream. Wire length √50 cm; 5 cm wide in x.
-  WP5    : z = z_grid2 - 0.037   plane tilted −45° to z-axis; vertical wires; 2.5 cm upstream of WP6.
-  WP6    : z = z_grid2 - 0.012   plane ⊥ z-axis; vertical wires (u = x_local)
+  WP5    : z = z_grid2 - 0.037   plane tilted −45° to z-axis; horizontal wires; 2.5 cm upstream of WP6.
+  WP6    : z = z_grid2 - 0.012   plane ⊥ z-axis; horizontal wires (run along x; u = y_local)
   grid2  : z = 0.520   MN8: 803 µm pitch, 43 µm thick, square mesh
 
 IC plane : z = 0.620   (= z_grid2 + 0.10 m)
@@ -76,10 +76,10 @@ Z_IC     = 0.620   # m   (10 cm downstream of grid2)
 APERTURE_HALF = 0.025   # m   → ±2.5 cm; 5 × 5 cm active area
 
 # Wire planes as (z [m], blocking_coord, label)
-# All wire planes have VERTICAL wires → blocking coordinate is always x_local.
+# All wire planes have HORIZONTAL wires (run along x) → blocking coordinate is y_local.
 # WP2/WP3 are physically tilted +45° to z (in x-z plane); WP4/WP5 tilted −45°.
 # The tilt shifts the crossing z by ≈ ±x_local, but for wire-hit purposes the
-# correction Δx = tx·(x_local) ≪ wire pitch so the nominal-z approximation is used.
+# correction Δy = ty·(x_local) ≪ wire pitch so the nominal-z approximation is used.
 _WP_DEFS: List[Tuple[float, str, str]] = [
     (0.010,             'x', 'WP1'),  # MCP1 — ⊥ to z, vertical wires
     (0.035,             'x', 'WP2'),  # MCP1 — tilted +45° to z, vertical wires
@@ -286,45 +286,45 @@ def run_simulation(
     # ── MCP1 wire planes ──────────────────────────────────────────────────────
     # Wire hits record transmission but do NOT update alive (aperture only).
 
-    # WP1 at z = 0.010 m, vertical wires (u = x_local)
+    # WP1 at z = 0.010 m, horizontal wires (u = y_local)
     xl_wp1, yl_wp1 = local_xy(0.010, O_WP1)
     alive          = alive & aperture_ok(xl_wp1, yl_wp1)
-    hit_wp1        = wire_hit(xl_wp1, WP_PITCH, WP_THICK * 0.5)
+    hit_wp1        = wire_hit(yl_wp1, WP_PITCH, WP_THICK * 0.5)
     pass_wp1       = ~hit_wp1   # per-event boolean (aperture already applied above)
 
-    # WP2 at z = 0.035 m — plane tilted +45° to z-axis, vertical wires (u = x_local)
+    # WP2 at z = 0.035 m — plane tilted +45° to z-axis, horizontal wires (u = y_local)
     xl_wp2, yl_wp2 = local_xy(0.035, O_WP2)
     alive          = alive & aperture_ok(xl_wp2, yl_wp2)
-    hit_wp2        = wire_hit(xl_wp2, WP_PITCH, WP_THICK * 0.5)
+    hit_wp2        = wire_hit(yl_wp2, WP_PITCH, WP_THICK * 0.5)
     pass_wp2       = ~hit_wp2
 
-    # WP3 at z = 0.037 m — plane tilted +45° to z-axis, vertical wires; parallel to WP2
+    # WP3 at z = 0.037 m — plane tilted +45° to z-axis, horizontal wires; parallel to WP2
     xl_wp3, yl_wp3 = local_xy(0.037, O_WP3)
     alive          = alive & aperture_ok(xl_wp3, yl_wp3)
-    hit_wp3        = wire_hit(xl_wp3, WP_PITCH, WP_THICK * 0.5)
+    hit_wp3        = wire_hit(yl_wp3, WP_PITCH, WP_THICK * 0.5)
     pass_wp3       = ~hit_wp3
 
     # ── MCP2 wire planes (upstream of grid2, in beam order) ──────────────────
 
-    # WP4 at z = z_grid2 - 0.039 — plane tilted −45° to z-axis, vertical wires; first in beam order
+    # WP4 at z = z_grid2 - 0.039 — plane tilted −45° to z-axis, horizontal wires (u = y_local)
     z_wp4 = Z_GRID2 - 0.039
     xl_wp4, yl_wp4 = local_xy(z_wp4, O_WP4)
     alive          = alive & aperture_ok(xl_wp4, yl_wp4)
-    hit_wp4        = wire_hit(xl_wp4, WP_PITCH, WP_THICK * 0.5)
+    hit_wp4        = wire_hit(yl_wp4, WP_PITCH, WP_THICK * 0.5)
     pass_wp4       = ~hit_wp4
 
-    # WP5 at z = z_grid2 - 0.037 — plane tilted −45° to z-axis, vertical wires; parallel to WP4
+    # WP5 at z = z_grid2 - 0.037 — plane tilted −45° to z-axis, horizontal wires; parallel to WP4
     z_wp5 = Z_GRID2 - 0.037
     xl_wp5, yl_wp5 = local_xy(z_wp5, O_WP5)
     alive          = alive & aperture_ok(xl_wp5, yl_wp5)
-    hit_wp5        = wire_hit(xl_wp5, WP_PITCH, WP_THICK * 0.5)
+    hit_wp5        = wire_hit(yl_wp5, WP_PITCH, WP_THICK * 0.5)
     pass_wp5       = ~hit_wp5
 
-    # WP6 at z = z_grid2 - 0.012, vertical wires (u = x_local); last MCP2 plane before grid2
+    # WP6 at z = z_grid2 - 0.012, horizontal wires (u = y_local); last MCP2 plane before grid2
     z_wp6 = Z_GRID2 - 0.012
     xl_wp6, yl_wp6 = local_xy(z_wp6, O_WP6)
     alive          = alive & aperture_ok(xl_wp6, yl_wp6)
-    hit_wp6        = wire_hit(xl_wp6, WP_PITCH, WP_THICK * 0.5)
+    hit_wp6        = wire_hit(yl_wp6, WP_PITCH, WP_THICK * 0.5)
     pass_wp6       = ~hit_wp6
 
     # ── Grid 2 — STOP SIGNAL position ─────────────────────────────────────────

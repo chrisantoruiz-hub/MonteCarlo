@@ -84,14 +84,14 @@ def get_config() -> DefaultConfig:
                     "T_analytic": round(analytic_T(GRID1_PITCH, GRID1_THICK, axes=2), 5),
                     "wires":      "x and y",
                 },
-                "WP1": {"z_m": 0.010, "orientation": "vertical wires (u = x_local); plane ⊥ z-axis"},
-                "WP2": {"z_m": 0.035, "orientation": "vertical wires (u = x_local); plane tilted +45° to z-axis", "note": "2.5 cm downstream of WP1; wire length √50 cm = 5√2 cm, 5 cm wide in x"},
-                "WP3": {"z_m": 0.037, "orientation": "vertical wires (u = x_local); plane tilted +45° to z-axis", "note": "parallel to WP2; 2 mm downstream"},
+                "WP1": {"z_m": 0.010, "orientation": "horizontal wires (run along x; u = y_local); plane ⊥ z-axis"},
+                "WP2": {"z_m": 0.035, "orientation": "horizontal wires (u = y_local); plane tilted +45° to z-axis", "note": "2.5 cm downstream of WP1; wire length √50 cm = 5√2 cm, 5 cm wide in x"},
+                "WP3": {"z_m": 0.037, "orientation": "horizontal wires (u = y_local); plane tilted +45° to z-axis", "note": "parallel to WP2; 2 mm downstream"},
             },
             "MCP2": {
-                "WP4": {"z_m": Z_GRID2 - 0.039, "orientation": "vertical wires (u = x_local); plane tilted −45° to z-axis", "note": "first in beam order; parallel to WP5, 2 mm upstream; wire length √50 cm, 5 cm wide in x"},
-                "WP5": {"z_m": Z_GRID2 - 0.037, "orientation": "vertical wires (u = x_local); plane tilted −45° to z-axis", "note": "2.5 cm upstream of WP6"},
-                "WP6": {"z_m": Z_GRID2 - 0.012, "orientation": "vertical wires (u = x_local); plane ⊥ z-axis"},
+                "WP4": {"z_m": Z_GRID2 - 0.039, "orientation": "horizontal wires (u = y_local); plane tilted −45° to z-axis", "note": "first in beam order; parallel to WP5, 2 mm upstream; wire length √50 cm, 5 cm wide in x"},
+                "WP5": {"z_m": Z_GRID2 - 0.037, "orientation": "horizontal wires (u = y_local); plane tilted −45° to z-axis", "note": "2.5 cm upstream of WP6"},
+                "WP6": {"z_m": Z_GRID2 - 0.012, "orientation": "horizontal wires (run along x; u = y_local); plane ⊥ z-axis"},
                 "grid2": {
                     "z_m":        Z_GRID2,
                     "type":       "MN8 (square mesh)",
@@ -110,11 +110,11 @@ def get_config() -> DefaultConfig:
                 "thick_um": round(WP_THICK * 1e6, 1),
                 "T_analytic_per_plane": round(analytic_T(WP_PITCH, WP_THICK, axes=1), 4),
                 "note_orientations": (
-                    "ALL wire planes have vertical wires (blocking u = x_local). "
+                    "ALL wire planes have horizontal wires (run along x; blocking u = y_local). "
                     "WP1/WP6 planes are perpendicular to the beam axis. "
                     "WP2/WP3 planes are tilted +45° to the z-axis (in x-z plane). "
                     "WP4/WP5 planes are tilted −45° to the z-axis (in x-z plane). "
-                    "Tilt shifts the crossing z by ≈ ±x_local but Δx ≪ wire pitch so "
+                    "Tilt shifts the crossing z by ≈ ±x_local but Δy = ty·Δz ≪ wire pitch so "
                     "the nominal-z approximation is used for wire-hit evaluation."
                 ),
             },

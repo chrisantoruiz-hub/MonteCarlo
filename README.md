@@ -48,8 +48,8 @@ All z positions are relative to grid1. Aperture is **5 × 5 cm** (±25 mm) at ev
 ### Wire plane common parameters
 
 - Pitch = 2500 µm, wire thickness = 50 µm → T = 98 % per plane (1-D analytic)
-- All wires are **vertical** (run along y; block in x). The ±45° refers to the tilt of the **physical plane** relative to the beam axis, not the wire orientation.
-- For the wire-hit check, the nominal-z approximation is used: the x-dependent shift in crossing-z due to the plane tilt (Δz ≈ ±x_local) produces Δx = θx·Δz ≪ wire pitch for typical angles (θx ~ 2 mrad), so the correction is negligible.
+- All wires are **horizontal** (run along x; block in y, u = y_local). The ±45° refers to the tilt of the **physical plane** relative to the beam axis, not the wire orientation.
+- For the wire-hit check, the nominal-z approximation is used: the x-dependent shift in crossing-z due to the plane tilt (Δz ≈ ±x_local) produces Δy = ty·Δz ≪ wire pitch for typical angles (ty ~ 2 mrad), so the correction is negligible.
 
 ### Analytic transmission values
 
