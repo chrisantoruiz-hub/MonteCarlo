@@ -957,17 +957,17 @@ function drawBeamline() {
       inner += `<circle cx="${x}" cy="${yc}" r="5" fill="${el.color}" opacity="0.9"/>`;
     } else if (el.type === 'wire') {
       if (el.note === 'x') {
-        // vertical wires
+        // Plane ⊥ to beam — vertical line in side view
         inner += `<line x1="${x}" y1="${yc - 16}" x2="${x}" y2="${yc + 16}"
                         stroke="${el.color}" stroke-width="2" opacity="0.85"/>`;
       } else if (el.note === '45') {
-        // +45° diagonal / (bottom-left to top-right)
-        inner += `<line x1="${x - 8}" y1="${yc + 12}" x2="${x + 8}" y2="${yc - 12}"
-                        stroke="${el.color}" stroke-width="2" opacity="0.85"/>`;
+        // Plane tilted +45° to z — "/" in side view, full transverse span
+        inner += `<line x1="${x - 16}" y1="${yc + 16}" x2="${x + 16}" y2="${yc - 16}"
+                        stroke="${el.color}" stroke-width="2" opacity="0.9"/>`;
       } else {
-        // −45° diagonal \ (top-left to bottom-right)
-        inner += `<line x1="${x - 8}" y1="${yc - 12}" x2="${x + 8}" y2="${yc + 12}"
-                        stroke="${el.color}" stroke-width="2" opacity="0.85"/>`;
+        // Plane tilted −45° to z — "\" in side view, full transverse span
+        inner += `<line x1="${x - 16}" y1="${yc - 16}" x2="${x + 16}" y2="${yc + 16}"
+                        stroke="${el.color}" stroke-width="2" opacity="0.9"/>`;
       }
     } else if (el.type === 'mesh') {
       inner += `<line x1="${x - 1}" y1="${yc - 18}" x2="${x - 1}" y2="${yc + 18}"
