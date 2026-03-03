@@ -97,9 +97,9 @@ N_PLANES    = len(PLANE_NAMES)   # 9
 GRID1_PITCH = 1_238e-6   # m
 GRID1_THICK =    32e-6   # m
 
-# Wire planes
-WP_PITCH = 2_500e-6   # m   (50 µm / (1−0.98) = 2500 µm)
-WP_THICK =    50e-6   # m
+# Wire planes — cylindrical wires, 20 µm diameter, 1 mm pitch
+WP_PITCH = 1_000e-6   # m   pitch = 1 mm
+WP_THICK =    20e-6   # m   wire diameter (cylindrical cross-section)
 
 # Grid MN8  (grid2) — square mesh
 GRID2_PITCH =  803e-6   # m
