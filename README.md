@@ -51,6 +51,16 @@ All z positions are relative to grid1. Aperture is **5 × 5 cm** (±25 mm) at ev
 - All wires are **vertical** (run along y; block in x). The ±45° refers to the tilt of the **physical plane** relative to the beam axis, not the wire orientation.
 - For the wire-hit check, the nominal-z approximation is used: the x-dependent shift in crossing-z due to the plane tilt (Δz ≈ ±x_local) produces Δx = θx·Δz ≪ wire pitch for typical angles (θx ~ 2 mrad), so the correction is negligible.
 
+### Analytic transmission values
+
+| Element | Formula | T |
+|---------|---------|---|
+| grid1 (MN4 square mesh) | ((p − t) / p)² | **0.94897** |
+| wire plane (single, 1-D) | (p − t) / p | **0.98000** |
+| grid2 (MN8 square mesh) | ((p − t) / p)² | **0.89577** |
+
+These are displayed in the Efficiencies sidebar without requiring a simulation run.
+
 ---
 
 ## Per-plane random offsets
