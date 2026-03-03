@@ -219,6 +219,23 @@
     }
     @media (max-width: 1100px) { .geo-plane-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 700px)  { .geo-plane-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    /* Analytic transmission block */
+    .analytic-t-block {
+      margin-top: 10px; padding: 7px 8px;
+      background: #0c1020; border: 1px solid #1e2640; border-radius: 5px;
+    }
+    .analytic-t-title {
+      font-size: .65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: #4a6fa5; margin-bottom: 6px;
+    }
+    .analytic-t-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 3px;
+    }
+    .analytic-t-row:last-child { margin-bottom: 0; }
+    .analytic-t-row .at-label { font-size: .72rem; color: #6b7a99; }
+    .analytic-t-row .at-val   { font-size: .78rem; font-weight: 600; color: #93c5fd; font-family: 'Courier New', monospace; }
   </style>
 </head>
 <body>
@@ -321,6 +338,21 @@
         </div>
         <input type="range" id="sl-tof_fwhm" min="0" max="2000" step="10" value="400"
                oninput="syncSlider('tof_fwhm', this.value, v => v+' ps')">
+      </div>
+      <div class="analytic-t-block">
+        <div class="analytic-t-title">Analytic Transmission (T)</div>
+        <div class="analytic-t-row">
+          <span class="at-label">grid1 — MN4 mesh</span>
+          <span class="at-val" id="at-grid1">—</span>
+        </div>
+        <div class="analytic-t-row">
+          <span class="at-label">wire plane (single)</span>
+          <span class="at-val" id="at-wp">—</span>
+        </div>
+        <div class="analytic-t-row">
+          <span class="at-label">grid2 — MN8 mesh</span>
+          <span class="at-val" id="at-grid2">—</span>
+        </div>
       </div>
     </div>
 
@@ -1117,6 +1149,19 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('lbl-nbins').textContent      = '100';
   document.getElementById('lbl-offset_amp').textContent = '0.50 mm';
   document.getElementById('lbl-tof_fwhm').textContent   = '400 ps';
+
+  // Analytic transmission — geometry constants matching backend sim.py
+  (function() {
+    function analyticT(pitch, thick, axes) {
+      return Math.pow((pitch - thick) / pitch, axes);
+    }
+    const T_grid1 = analyticT(1238e-6, 32e-6, 2);
+    const T_wp    = analyticT(2500e-6, 50e-6, 1);
+    const T_grid2 = analyticT( 803e-6, 43e-6, 2);
+    document.getElementById('at-grid1').textContent = T_grid1.toFixed(5);
+    document.getElementById('at-wp').textContent    = T_wp.toFixed(5);
+    document.getElementById('at-grid2').textContent = T_grid2.toFixed(5);
+  })();
 
   drawBeamline();
   drawGeometryPlots();
