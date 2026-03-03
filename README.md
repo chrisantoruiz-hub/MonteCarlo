@@ -85,7 +85,7 @@ Offsets affect both the aperture test and the wire-hit blocking coordinate (via 
 | N_detected_IC | reach_IC AND Bernoulli(η_IC) |
 | **N_coin_TOF_IC** | **tof_recorded AND IC_detected** — primary measured sample |
 
-**Stop signal rule**: wire hits at any wire plane do NOT terminate propagation. Only aperture losses (|x| or |y| > 25 mm) remove a particle from the geometric survival mask.
+**Propagation rule**: both aperture losses (|x| or |y| > 25 mm) and wire hits remove a particle from the alive mask. A particle absorbed by a wire at any element does not continue to downstream planes. The stop signal at grid2 requires the particle to pass the aperture **and** the wire mesh.
 
 ---
 

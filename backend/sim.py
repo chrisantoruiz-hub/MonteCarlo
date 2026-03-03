@@ -48,8 +48,9 @@ IC plane : z = 0.620   (= z_grid2 + 0.10 m)
 
 Key implementation notes
 ─────────────────────────
-- STOP SIGNAL: generated when particle reaches z_grid2 without aperture loss.
-  Wire hits do NOT terminate propagation; only aperture losses do.
+- STOP SIGNAL: generated when particle reaches z_grid2, passes aperture, AND
+  passes the grid2 wire mesh. Both aperture losses and wire hits terminate
+  propagation (remove the particle from the alive mask).
 - COINCIDENCE: N_coin_TOF_IC = events with BOTH TOF recorded AND IC detected.
   All "measured yield" statistics use this.
 - RANDOM OFFSETS: each plane gets a static (dx, dy) uniform in [-offset_amp, +offset_amp].
@@ -265,11 +266,10 @@ def run_simulation(
         xg, yg = pos_at(z)
         return xg - offset[0], yg - offset[1]
 
-    # ── Geometric survival mask (aperture only, wire hits do NOT kill) ─────────
-    # This mask tracks whether each particle has been aperture-lost.
-    # Wire hits are checked independently per-plane but only count
-    # against START/STOP when evaluating the specific grid transmissions.
-    alive = np.ones(N, dtype=bool)   # all particles alive (no aperture loss yet)
+    # ── Geometric survival mask ───────────────────────────────────────────────
+    # This mask tracks whether each particle is still propagating.
+    # Both aperture losses AND wire hits remove a particle from alive.
+    alive = np.ones(N, dtype=bool)   # all particles alive initially
 
     # ── Grid 1 (z = 0) ────────────────────────────────────────────────────────
     xl_g1, yl_g1 = local_xy(Z_GRID1, O_GRID1)
@@ -280,33 +280,33 @@ def run_simulation(
 
     start_signal = pass_g1   # start-signal events (passed grid1 wire + aperture)
 
-    # Apply aperture loss at grid1 to the geometric survival mask
-    alive = alive & ap_g1    # wire hits at grid1 do NOT kill geometry propagation
-    n_wire_g1 = int((alive & hit_g1).sum())   # alive here = within grid1 aperture
+    # Aperture loss then wire absorption at grid1
+    alive     = alive & ap_g1
+    n_wire_g1 = int((alive & hit_g1).sum())
+    alive     = alive & ~hit_g1
 
     # ── MCP1 wire planes ──────────────────────────────────────────────────────
-    # Wire hits record transmission but do NOT update alive (aperture only).
 
     # WP1 at z = 0.010 m, wires along y (u = x_local)
     xl_wp1, yl_wp1 = local_xy(0.010, O_WP1)
     alive          = alive & aperture_ok(xl_wp1, yl_wp1)
     hit_wp1        = wire_hit(xl_wp1, WP_PITCH, WP_THICK * 0.5)
-    pass_wp1       = ~hit_wp1   # per-event boolean (aperture already applied above)
     n_wire_wp1     = int((alive & hit_wp1).sum())
+    alive          = alive & ~hit_wp1
 
     # WP2 at z = 0.035 m — plane tilted +45° to z-axis, wires along y (u = x_local)
     xl_wp2, yl_wp2 = local_xy(0.035, O_WP2)
     alive          = alive & aperture_ok(xl_wp2, yl_wp2)
     hit_wp2        = wire_hit(xl_wp2, WP_PITCH, WP_THICK * 0.5)
-    pass_wp2       = ~hit_wp2
     n_wire_wp2     = int((alive & hit_wp2).sum())
+    alive          = alive & ~hit_wp2
 
     # WP3 at z = 0.037 m — plane tilted +45° to z-axis, wires along y; parallel to WP2
     xl_wp3, yl_wp3 = local_xy(0.037, O_WP3)
     alive          = alive & aperture_ok(xl_wp3, yl_wp3)
     hit_wp3        = wire_hit(xl_wp3, WP_PITCH, WP_THICK * 0.5)
-    pass_wp3       = ~hit_wp3
     n_wire_wp3     = int((alive & hit_wp3).sum())
+    alive          = alive & ~hit_wp3
 
     # ── MCP2 wire planes (upstream of grid2, in beam order) ──────────────────
 
@@ -315,38 +315,36 @@ def run_simulation(
     xl_wp4, yl_wp4 = local_xy(z_wp4, O_WP4)
     alive          = alive & aperture_ok(xl_wp4, yl_wp4)
     hit_wp4        = wire_hit(xl_wp4, WP_PITCH, WP_THICK * 0.5)
-    pass_wp4       = ~hit_wp4
     n_wire_wp4     = int((alive & hit_wp4).sum())
+    alive          = alive & ~hit_wp4
 
     # WP5 at z = z_grid2 - 0.037 — plane tilted −45° to z-axis, wires along y; parallel to WP4
     z_wp5 = Z_GRID2 - 0.037
     xl_wp5, yl_wp5 = local_xy(z_wp5, O_WP5)
     alive          = alive & aperture_ok(xl_wp5, yl_wp5)
     hit_wp5        = wire_hit(xl_wp5, WP_PITCH, WP_THICK * 0.5)
-    pass_wp5       = ~hit_wp5
     n_wire_wp5     = int((alive & hit_wp5).sum())
+    alive          = alive & ~hit_wp5
 
     # WP6 at z = z_grid2 - 0.012, wires along y (u = x_local); last MCP2 plane before grid2
     z_wp6 = Z_GRID2 - 0.012
     xl_wp6, yl_wp6 = local_xy(z_wp6, O_WP6)
     alive          = alive & aperture_ok(xl_wp6, yl_wp6)
     hit_wp6        = wire_hit(xl_wp6, WP_PITCH, WP_THICK * 0.5)
-    pass_wp6       = ~hit_wp6
     n_wire_wp6     = int((alive & hit_wp6).sum())
+    alive          = alive & ~hit_wp6
 
     # ── Grid 2 — STOP SIGNAL position ─────────────────────────────────────────
-    # Stop is defined for any particle that reaches z_grid2 WITHOUT aperture loss.
-    # Wire hits at grid2 do NOT prevent stop generation.
+    # A particle must reach z_grid2, pass the aperture AND pass the wire mesh
+    # to generate a stop signal (and continue to IC).
     xl_g2, yl_g2 = local_xy(Z_GRID2, O_GRID2)
     ap_g2        = aperture_ok(xl_g2, yl_g2)
-    reach_g2     = alive & ap_g2       # survived all aperture losses so far
-    stop_signal  = reach_g2.copy()     # stop generated regardless of grid2 wire hit
-
-    # Apply grid2 wire hit AFTER stop signal for IC reach tracking
-    hit_g2    = (wire_hit(xl_g2, GRID2_PITCH, GRID2_THICK * 0.5) |
-                 wire_hit(yl_g2, GRID2_PITCH, GRID2_THICK * 0.5))
-    pass_g2   = reach_g2 & ~hit_g2
-    n_wire_g2 = int((reach_g2 & hit_g2).sum())
+    reach_g2     = alive & ap_g2
+    hit_g2       = (wire_hit(xl_g2, GRID2_PITCH, GRID2_THICK * 0.5) |
+                    wire_hit(yl_g2, GRID2_PITCH, GRID2_THICK * 0.5))
+    n_wire_g2    = int((reach_g2 & hit_g2).sum())
+    pass_g2      = reach_g2 & ~hit_g2
+    stop_signal  = pass_g2.copy()      # stop signal = passed grid2 aperture AND mesh
 
     # tof_defined = start AND stop (both start_signal and reach_g2 are per-event)
     tof_defined = start_signal & stop_signal
