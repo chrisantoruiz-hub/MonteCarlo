@@ -100,6 +100,13 @@ All rates are relative to N_generated:
 | TOF recorded fraction | N_tof_recorded / N_generated |
 | IC detected fraction | N_detected_IC / N_generated |
 | **Coincidence fraction** | **N_coin_TOF_IC / N_generated** |
+| Grid transmission | N_pass_grid2 / N_generated |
+| **Recovered MCP efficiency** | N_coin_TOF_IC / N_detected_IC |
+| **Recovered IC efficiency** | N_coin_TOF_IC / (N_tof_recorded × T_grid2) |
+
+**Recovered MCP efficiency**: fraction of IC-detected events that also produced a TOF signal. Estimates the combined MCP + start-plane efficiency as seen from the IC side.
+
+**Recovered IC efficiency**: fraction of TOF events expected to reach the IC (after grid2 analytic transmission T_grid2) that were actually detected. Estimates η_IC × wire-plane transmission product as seen from the TOF side.
 
 ---
 
