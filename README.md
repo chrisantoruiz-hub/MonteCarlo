@@ -23,21 +23,21 @@ All z positions are relative to grid1. Aperture is **5 × 5 cm** (±25 mm) at ev
 
 ### MCP1 (z = 0 – 0.037 m)
 
-| Element | z (m)  | Description |
-|---------|--------|-------------|
-| grid1   | 0.000  | MN4 square mesh: pitch 1238 µm, t = 32 µm (x- and y-wires) |
-| WP1     | 0.010  | Plane **⊥ to beam**; vertical wires (blocking coord u = x_local) |
-| WP2     | 0.035  | Plane **tilted +45° to z-axis** (in x-z plane); vertical wires |
-| WP3     | 0.037  | Plane **tilted +45° to z-axis**; vertical wires; parallel to WP2, 2 mm downstream |
+| Element | z (m)             | Description |
+|---------|-------------------|-------------|
+| grid1   | 0.000 – 0.000032  | MN4 square mesh: pitch 1238 µm, t = 32 µm (x- and y-wires); z-extent = wire thickness |
+| WP1     | 0.010             | Plane **⊥ to beam**; horizontal wires (run along x; blocking coord u = y_local) |
+| WP2     | 0.035             | Plane **tilted +45° to z-axis** (in x-z plane); horizontal wires (u = y_local) |
+| WP3     | 0.037             | Plane **tilted +45° to z-axis**; horizontal wires; parallel to WP2, 2 mm downstream |
 
 ### MCP2 (z = 0.481 – 0.520 m)
 
-| Element | z (m)  | Description |
-|---------|--------|-------------|
-| WP4     | 0.481  | Plane **tilted −45° to z-axis** (in x-z plane); vertical wires; first in beam order |
-| WP5     | 0.483  | Plane **tilted −45° to z-axis**; vertical wires; parallel to WP4, 2 mm downstream |
-| WP6     | 0.508  | Plane **⊥ to beam**; vertical wires (blocking coord u = x_local) |
-| grid2   | 0.520  | MN8 square mesh: pitch 803 µm, t = 43 µm (x- and y-wires) |
+| Element | z (m)             | Description |
+|---------|-------------------|-------------|
+| WP4     | 0.481             | Plane **tilted −45° to z-axis** (in x-z plane); horizontal wires (u = y_local); first in beam order |
+| WP5     | 0.483             | Plane **tilted −45° to z-axis**; horizontal wires; parallel to WP4, 2 mm downstream |
+| WP6     | 0.508             | Plane **⊥ to beam**; horizontal wires (run along x; blocking coord u = y_local) |
+| grid2   | 0.520 – 0.520043  | MN8 square mesh: pitch 803 µm, t = 43 µm (x- and y-wires); z-extent = wire thickness |
 
 ### Downstream
 

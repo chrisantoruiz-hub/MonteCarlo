@@ -78,9 +78,11 @@ def get_config() -> DefaultConfig:
             "MCP1": {
                 "grid1": {
                     "z_m":        Z_GRID1,
+                    "z_extent_m": (Z_GRID1, round(Z_GRID1 + GRID1_THICK, 9)),
                     "type":       "MN4 (square mesh)",
                     "pitch_um":   round(GRID1_PITCH * 1e6, 1),
                     "thick_um":   round(GRID1_THICK * 1e6, 1),
+                    "note":       "z-extent equals wire thickness",
                     "T_analytic": round(analytic_T(GRID1_PITCH, GRID1_THICK, axes=2), 5),
                     "wires":      "x and y",
                 },
@@ -94,9 +96,11 @@ def get_config() -> DefaultConfig:
                 "WP6": {"z_m": Z_GRID2 - 0.012, "orientation": "horizontal wires (run along x; u = y_local); plane ⊥ z-axis"},
                 "grid2": {
                     "z_m":        Z_GRID2,
+                    "z_extent_m": (Z_GRID2, round(Z_GRID2 + GRID2_THICK, 9)),
                     "type":       "MN8 (square mesh)",
                     "pitch_um":   round(GRID2_PITCH * 1e6, 1),
                     "thick_um":   round(GRID2_THICK * 1e6, 1),
+                    "note":       "z-extent equals wire thickness",
                     "T_analytic": round(analytic_T(GRID2_PITCH, GRID2_THICK, axes=2), 5),
                     "wires":      "x and y",
                 },

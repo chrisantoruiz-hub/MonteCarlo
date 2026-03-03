@@ -30,7 +30,7 @@ Physics assumptions
 Geometry (all in metres)
 ─────────────────────────
 MCP1:
-  grid1  : z = 0.000   MN4: 1238 µm pitch, 32 µm thick, square mesh
+  grid1  : z = 0.000–0.000032   MN4: 1238 µm pitch, 32 µm thick (z-extent = wire thickness), square mesh
   WP1    : z = 0.010   plane ⊥ z-axis; horizontal wires (run along x; u = y_local)
   WP2    : z = 0.035   plane tilted +45° to z-axis; horizontal wires (u = y_local).
            2.5 cm downstream of WP1.  Wire length √50 cm = 5√2 cm; 5 cm wide in x.
@@ -42,7 +42,7 @@ MCP2 (upstream side of grid2, z_grid2 = 0.520 m):
            First in beam order; parallel to WP5, 2 mm upstream. Wire length √50 cm; 5 cm wide in x.
   WP5    : z = z_grid2 - 0.037   plane tilted −45° to z-axis; horizontal wires; 2.5 cm upstream of WP6.
   WP6    : z = z_grid2 - 0.012   plane ⊥ z-axis; horizontal wires (run along x; u = y_local)
-  grid2  : z = 0.520   MN8: 803 µm pitch, 43 µm thick, square mesh
+  grid2  : z = 0.520–0.520043   MN8: 803 µm pitch, 43 µm thick (z-extent = wire thickness), square mesh
 
 IC plane : z = 0.620   (= z_grid2 + 0.10 m)
 
