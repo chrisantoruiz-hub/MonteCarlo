@@ -992,28 +992,28 @@ function drawBeamline() {
       inner += `<circle cx="${x}" cy="${yc}" r="5" fill="${el.color}" opacity="0.9"/>`;
     } else if (el.type === 'wire') {
       if (el.note === 'x') {
-        // Plane ⊥ to beam; horizontal wires → stacked horizontal tick marks
+        // Plane ⊥ to beam; wires along y → appear as dots (cross-sections) on vertical plane edge
         inner += `<line x1="${x}" y1="${yc - 16}" x2="${x}" y2="${yc + 16}"
-                        stroke="${el.color}" stroke-width="0.5" opacity="0.35" stroke-dasharray="1,2"/>`;
+                        stroke="${el.color}" stroke-width="1" opacity="0.5"/>`;
         for (const dy of [-12, -4, 4, 12]) {
-          inner += `<line x1="${x - 7}" y1="${yc + dy}" x2="${x + 7}" y2="${yc + dy}"
-                          stroke="${el.color}" stroke-width="1.5" opacity="0.85"/>`;
+          inner += `<circle cx="${x}" cy="${yc + dy}" r="2"
+                            fill="${el.color}" opacity="0.9"/>`;
         }
       } else if (el.note === '45') {
-        // Plane tilted +45° to z; horizontal wires → "/" diagonal + horizontal ticks
+        // Plane tilted +45° to z; wires along y → dots along "/" diagonal edge
         inner += `<line x1="${x - 16}" y1="${yc + 16}" x2="${x + 16}" y2="${yc - 16}"
-                        stroke="${el.color}" stroke-width="1.2" opacity="0.65"/>`;
+                        stroke="${el.color}" stroke-width="1" opacity="0.5"/>`;
         for (const [ox, oy] of [[-10, 10], [0, 0], [10, -10]]) {
-          inner += `<line x1="${x + ox - 5}" y1="${yc + oy}" x2="${x + ox + 5}" y2="${yc + oy}"
-                          stroke="${el.color}" stroke-width="1.5" opacity="0.9"/>`;
+          inner += `<circle cx="${x + ox}" cy="${yc + oy}" r="2"
+                            fill="${el.color}" opacity="0.9"/>`;
         }
       } else {
-        // Plane tilted −45° to z; horizontal wires → "\" diagonal + horizontal ticks
+        // Plane tilted −45° to z; wires along y → dots along "\" diagonal edge
         inner += `<line x1="${x - 16}" y1="${yc - 16}" x2="${x + 16}" y2="${yc + 16}"
-                        stroke="${el.color}" stroke-width="1.2" opacity="0.65"/>`;
+                        stroke="${el.color}" stroke-width="1" opacity="0.5"/>`;
         for (const [ox, oy] of [[-10, -10], [0, 0], [10, 10]]) {
-          inner += `<line x1="${x + ox - 5}" y1="${yc + oy}" x2="${x + ox + 5}" y2="${yc + oy}"
-                          stroke="${el.color}" stroke-width="1.5" opacity="0.9"/>`;
+          inner += `<circle cx="${x + ox}" cy="${yc + oy}" r="2"
+                            fill="${el.color}" opacity="0.9"/>`;
         }
       }
     } else if (el.type === 'mesh') {
@@ -1066,12 +1066,12 @@ function drawBeamline() {
 function drawGeometryPlots() {
   const planes = [
     { id: 'geo-grid1', label: 'Grid1', z: 0.000, type: 'mesh',     pitch: 1.238, color: '#3b82f6' },
-    { id: 'geo-wp1',   label: 'WP1',   z: 0.010, type: 'horizontal', pitch: 1.000, color: '#64748b' },
-    { id: 'geo-wp2',   label: 'WP2',   z: 0.035, type: 'horizontal', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
-    { id: 'geo-wp3',   label: 'WP3',   z: 0.037, type: 'horizontal', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
-    { id: 'geo-wp4',   label: 'WP4',   z: 0.481, type: 'horizontal', pitch: 1.000, color: '#64748b', tilt: '−45° to z' },
-    { id: 'geo-wp5',   label: 'WP5',   z: 0.483, type: 'horizontal', pitch: 1.000, color: '#94a3b8', tilt: '−45° to z' },
-    { id: 'geo-wp6',   label: 'WP6',   z: 0.508, type: 'horizontal', pitch: 1.000, color: '#64748b' },
+    { id: 'geo-wp1',   label: 'WP1',   z: 0.010, type: 'vertical', pitch: 1.000, color: '#64748b' },
+    { id: 'geo-wp2',   label: 'WP2',   z: 0.035, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp3',   label: 'WP3',   z: 0.037, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp4',   label: 'WP4',   z: 0.481, type: 'vertical', pitch: 1.000, color: '#64748b', tilt: '−45° to z' },
+    { id: 'geo-wp5',   label: 'WP5',   z: 0.483, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '−45° to z' },
+    { id: 'geo-wp6',   label: 'WP6',   z: 0.508, type: 'vertical', pitch: 1.000, color: '#64748b' },
     { id: 'geo-grid2', label: 'Grid2', z: 0.520, type: 'mesh',     pitch: 0.803, color: '#8b5cf6' },
   ];
   for (const p of planes) drawOnePlane(p);

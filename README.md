@@ -26,17 +26,17 @@ All z positions are relative to grid1. Aperture is **5 × 5 cm** (±25 mm) at ev
 | Element | z (m)             | Description |
 |---------|-------------------|-------------|
 | grid1   | 0.000 – 0.000032  | MN4 square mesh: pitch 1238 µm, t = 32 µm (x- and y-wires); z-extent = wire thickness |
-| WP1     | 0.010             | Plane **⊥ to beam**; horizontal wires (run along x; blocking coord u = y_local) |
-| WP2     | 0.035             | Plane **tilted +45° to z-axis** (in x-z plane); horizontal wires (u = y_local) |
-| WP3     | 0.037             | Plane **tilted +45° to z-axis**; horizontal wires; parallel to WP2, 2 mm downstream |
+| WP1     | 0.010             | Plane **⊥ to beam**; wires along y (vertical; blocking coord u = x_local) |
+| WP2     | 0.035             | Plane **tilted +45° to z-axis** (in x-z plane); wires along y (u = x_local) |
+| WP3     | 0.037             | Plane **tilted +45° to z-axis**; wires along y; parallel to WP2, 2 mm downstream |
 
 ### MCP2 (z = 0.481 – 0.520 m)
 
 | Element | z (m)             | Description |
 |---------|-------------------|-------------|
-| WP4     | 0.481             | Plane **tilted −45° to z-axis** (in x-z plane); horizontal wires (u = y_local); first in beam order |
-| WP5     | 0.483             | Plane **tilted −45° to z-axis**; horizontal wires; parallel to WP4, 2 mm downstream |
-| WP6     | 0.508             | Plane **⊥ to beam**; horizontal wires (run along x; blocking coord u = y_local) |
+| WP4     | 0.481             | Plane **tilted −45° to z-axis** (in x-z plane); wires along y (u = x_local); first in beam order |
+| WP5     | 0.483             | Plane **tilted −45° to z-axis**; wires along y; parallel to WP4, 2 mm downstream |
+| WP6     | 0.508             | Plane **⊥ to beam**; wires along y (vertical; blocking coord u = x_local) |
 | grid2   | 0.520 – 0.520043  | MN8 square mesh: pitch 803 µm, t = 43 µm (x- and y-wires); z-extent = wire thickness |
 
 ### Downstream
@@ -48,8 +48,8 @@ All z positions are relative to grid1. Aperture is **5 × 5 cm** (±25 mm) at ev
 ### Wire plane common parameters
 
 - Pitch = 1000 µm, wire diameter = 20 µm (cylindrical) → T = 98 % per plane (1-D analytic)
-- All wires are **horizontal** (run along x; block in y, u = y_local). The ±45° refers to the tilt of the **physical plane** relative to the beam axis, not the wire orientation.
-- For the wire-hit check, the nominal-z approximation is used: the x-dependent shift in crossing-z due to the plane tilt (Δz ≈ ±x_local) produces Δy = ty·Δz ≪ wire pitch for typical angles (ty ~ 2 mrad), so the correction is negligible.
+- All wires run along **y** (vertical; blocking coord u = x_local). The ±45° refers to the tilt of the **physical plane** relative to the beam axis, not the wire orientation.
+- For the wire-hit check, the nominal-z approximation is used: the x-dependent shift in crossing-z due to the plane tilt (Δz ≈ ±x_local) produces Δx = tx·Δz ≪ wire pitch for typical angles (tx ~ 2 mrad), so the correction is negligible.
 
 ### Analytic transmission values
 
