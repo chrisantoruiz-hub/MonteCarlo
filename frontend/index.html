@@ -989,17 +989,29 @@ function drawBeamline() {
       inner += `<circle cx="${x}" cy="${yc}" r="5" fill="${el.color}" opacity="0.9"/>`;
     } else if (el.type === 'wire') {
       if (el.note === 'x') {
-        // Plane ⊥ to beam — vertical line in side view
+        // Plane ⊥ to beam; horizontal wires → stacked horizontal tick marks
         inner += `<line x1="${x}" y1="${yc - 16}" x2="${x}" y2="${yc + 16}"
-                        stroke="${el.color}" stroke-width="2" opacity="0.85"/>`;
+                        stroke="${el.color}" stroke-width="0.5" opacity="0.35" stroke-dasharray="1,2"/>`;
+        for (const dy of [-12, -4, 4, 12]) {
+          inner += `<line x1="${x - 7}" y1="${yc + dy}" x2="${x + 7}" y2="${yc + dy}"
+                          stroke="${el.color}" stroke-width="1.5" opacity="0.85"/>`;
+        }
       } else if (el.note === '45') {
-        // Plane tilted +45° to z — "/" in side view, full transverse span
+        // Plane tilted +45° to z; horizontal wires → "/" diagonal + horizontal ticks
         inner += `<line x1="${x - 16}" y1="${yc + 16}" x2="${x + 16}" y2="${yc - 16}"
-                        stroke="${el.color}" stroke-width="2" opacity="0.9"/>`;
+                        stroke="${el.color}" stroke-width="1.2" opacity="0.65"/>`;
+        for (const [ox, oy] of [[-10, 10], [0, 0], [10, -10]]) {
+          inner += `<line x1="${x + ox - 5}" y1="${yc + oy}" x2="${x + ox + 5}" y2="${yc + oy}"
+                          stroke="${el.color}" stroke-width="1.5" opacity="0.9"/>`;
+        }
       } else {
-        // Plane tilted −45° to z — "\" in side view, full transverse span
+        // Plane tilted −45° to z; horizontal wires → "\" diagonal + horizontal ticks
         inner += `<line x1="${x - 16}" y1="${yc - 16}" x2="${x + 16}" y2="${yc + 16}"
-                        stroke="${el.color}" stroke-width="2" opacity="0.9"/>`;
+                        stroke="${el.color}" stroke-width="1.2" opacity="0.65"/>`;
+        for (const [ox, oy] of [[-10, -10], [0, 0], [10, 10]]) {
+          inner += `<line x1="${x + ox - 5}" y1="${yc + oy}" x2="${x + ox + 5}" y2="${yc + oy}"
+                          stroke="${el.color}" stroke-width="1.5" opacity="0.9"/>`;
+        }
       }
     } else if (el.type === 'mesh') {
       inner += `<line x1="${x - 1}" y1="${yc - 18}" x2="${x - 1}" y2="${yc + 18}"
