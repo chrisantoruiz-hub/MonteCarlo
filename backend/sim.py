@@ -48,9 +48,10 @@ IC plane : z = 0.620   (= z_grid2 + 0.10 m)
 
 Key implementation notes
 ─────────────────────────
-- STOP SIGNAL: generated when particle reaches z_grid2, passes aperture, AND
-  passes the grid2 wire mesh. Both aperture losses and wire hits terminate
-  propagation (remove the particle from the alive mask).
+- STOP SIGNAL: generated when particle reaches z_grid2 within aperture,
+  regardless of grid2 wire hit. TOF = (START AND STOP) × η_MCP.
+  Wire hits at grid1–WP6 terminate propagation (remove from alive mask);
+  grid2 wire hit only prevents the particle from continuing to the IC.
 - COINCIDENCE: N_coin_TOF_IC = events with BOTH TOF recorded AND IC detected.
   All "measured yield" statistics use this.
 - RANDOM OFFSETS: each plane gets a static (dx, dy) uniform in [-offset_amp, +offset_amp].
@@ -335,16 +336,18 @@ def run_simulation(
     alive          = alive & ~hit_wp6
 
     # ── Grid 2 — STOP SIGNAL position ─────────────────────────────────────────
-    # A particle must reach z_grid2, pass the aperture AND pass the wire mesh
-    # to generate a stop signal (and continue to IC).
+    # Stop signal fires for any particle that reaches z_grid2 within aperture,
+    # regardless of whether it hits a grid2 wire.  The wire hit only controls
+    # whether the particle continues to the IC.
     xl_g2, yl_g2 = local_xy(Z_GRID2, O_GRID2)
     ap_g2        = aperture_ok(xl_g2, yl_g2)
     reach_g2     = alive & ap_g2
-    hit_g2       = (wire_hit(xl_g2, GRID2_PITCH, GRID2_THICK * 0.5) |
-                    wire_hit(yl_g2, GRID2_PITCH, GRID2_THICK * 0.5))
-    n_wire_g2    = int((reach_g2 & hit_g2).sum())
-    pass_g2      = reach_g2 & ~hit_g2
-    stop_signal  = pass_g2.copy()      # stop signal = passed grid2 aperture AND mesh
+    stop_signal  = reach_g2.copy()     # stop fires on reaching grid2, wire-hit independent
+
+    hit_g2    = (wire_hit(xl_g2, GRID2_PITCH, GRID2_THICK * 0.5) |
+                 wire_hit(yl_g2, GRID2_PITCH, GRID2_THICK * 0.5))
+    n_wire_g2 = int((reach_g2 & hit_g2).sum())
+    pass_g2   = reach_g2 & ~hit_g2    # only mesh-passers continue to IC
 
     # tof_defined = start AND stop (both start_signal and reach_g2 are per-event)
     tof_defined = start_signal & stop_signal
