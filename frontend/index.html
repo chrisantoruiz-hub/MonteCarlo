@@ -654,6 +654,15 @@ function renderStats(s) {
     ['Reach IC (geom.)', fmt(s.N_reach_IC_geometric)],
     ['Detected IC',      fmt(s.N_detected_IC) + ' (' + pct(s.frac_IC_det_of_geometric) + ')'],
     ['COINCIDENCE',      fmt(s.N_coin_TOF_IC) + ' (' + pct(s.frac_coincidence) + ')', true],
+    ['— Wire hits —',   '', false, true],
+    ['grid1',            fmt(s.N_wire_hit_grid1) + ' (' + pct(s.N_wire_hit_grid1 / s.N_generated) + ')'],
+    ['WP1',              fmt(s.N_wire_hit_WP1)   + ' (' + pct(s.N_wire_hit_WP1   / s.N_generated) + ')'],
+    ['WP2',              fmt(s.N_wire_hit_WP2)   + ' (' + pct(s.N_wire_hit_WP2   / s.N_generated) + ')'],
+    ['WP3',              fmt(s.N_wire_hit_WP3)   + ' (' + pct(s.N_wire_hit_WP3   / s.N_generated) + ')'],
+    ['WP4',              fmt(s.N_wire_hit_WP4)   + ' (' + pct(s.N_wire_hit_WP4   / s.N_generated) + ')'],
+    ['WP5',              fmt(s.N_wire_hit_WP5)   + ' (' + pct(s.N_wire_hit_WP5   / s.N_generated) + ')'],
+    ['WP6',              fmt(s.N_wire_hit_WP6)   + ' (' + pct(s.N_wire_hit_WP6   / s.N_generated) + ')'],
+    ['grid2',            fmt(s.N_wire_hit_grid2) + ' (' + pct(s.N_wire_hit_grid2 / s.N_generated) + ')'],
     ['TOF mean',         fmt(s.tof_mean_ns, 4) + ' ns'],
     ['TOF RMS',          fmt(s.tof_rms_ns, 6) + ' ns'],
     ['beta',             s.beta.toFixed(6)],
@@ -663,12 +672,13 @@ function renderStats(s) {
   ];
 
   const grid = document.getElementById('stat-grid');
-  grid.innerHTML = items.map(([label, val, highlight]) => `
-    <div class="stat-item${highlight ? ' highlight' : ''}">
+  grid.innerHTML = items.map(([label, val, highlight, header]) => {
+    if (header) return `<div class="stat-section-header" style="grid-column:1/-1;font-size:9px;color:#4a6fa5;letter-spacing:.08em;padding:4px 0 2px;border-top:1px solid #1e2640;margin-top:4px;text-transform:uppercase">${label}</div>`;
+    return `<div class="stat-item${highlight ? ' highlight' : ''}">
       <div class="slabel">${label}</div>
       <div class="sval">${val}</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 /* ════════════════════════════════════════════════════════════════════════════

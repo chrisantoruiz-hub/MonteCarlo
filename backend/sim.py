@@ -282,6 +282,7 @@ def run_simulation(
 
     # Apply aperture loss at grid1 to the geometric survival mask
     alive = alive & ap_g1    # wire hits at grid1 do NOT kill geometry propagation
+    n_wire_g1 = int((alive & hit_g1).sum())   # alive here = within grid1 aperture
 
     # ── MCP1 wire planes ──────────────────────────────────────────────────────
     # Wire hits record transmission but do NOT update alive (aperture only).
@@ -291,18 +292,21 @@ def run_simulation(
     alive          = alive & aperture_ok(xl_wp1, yl_wp1)
     hit_wp1        = wire_hit(xl_wp1, WP_PITCH, WP_THICK * 0.5)
     pass_wp1       = ~hit_wp1   # per-event boolean (aperture already applied above)
+    n_wire_wp1     = int((alive & hit_wp1).sum())
 
     # WP2 at z = 0.035 m — plane tilted +45° to z-axis, wires along y (u = x_local)
     xl_wp2, yl_wp2 = local_xy(0.035, O_WP2)
     alive          = alive & aperture_ok(xl_wp2, yl_wp2)
     hit_wp2        = wire_hit(xl_wp2, WP_PITCH, WP_THICK * 0.5)
     pass_wp2       = ~hit_wp2
+    n_wire_wp2     = int((alive & hit_wp2).sum())
 
     # WP3 at z = 0.037 m — plane tilted +45° to z-axis, wires along y; parallel to WP2
     xl_wp3, yl_wp3 = local_xy(0.037, O_WP3)
     alive          = alive & aperture_ok(xl_wp3, yl_wp3)
     hit_wp3        = wire_hit(xl_wp3, WP_PITCH, WP_THICK * 0.5)
     pass_wp3       = ~hit_wp3
+    n_wire_wp3     = int((alive & hit_wp3).sum())
 
     # ── MCP2 wire planes (upstream of grid2, in beam order) ──────────────────
 
@@ -312,6 +316,7 @@ def run_simulation(
     alive          = alive & aperture_ok(xl_wp4, yl_wp4)
     hit_wp4        = wire_hit(xl_wp4, WP_PITCH, WP_THICK * 0.5)
     pass_wp4       = ~hit_wp4
+    n_wire_wp4     = int((alive & hit_wp4).sum())
 
     # WP5 at z = z_grid2 - 0.037 — plane tilted −45° to z-axis, wires along y; parallel to WP4
     z_wp5 = Z_GRID2 - 0.037
@@ -319,6 +324,7 @@ def run_simulation(
     alive          = alive & aperture_ok(xl_wp5, yl_wp5)
     hit_wp5        = wire_hit(xl_wp5, WP_PITCH, WP_THICK * 0.5)
     pass_wp5       = ~hit_wp5
+    n_wire_wp5     = int((alive & hit_wp5).sum())
 
     # WP6 at z = z_grid2 - 0.012, wires along y (u = x_local); last MCP2 plane before grid2
     z_wp6 = Z_GRID2 - 0.012
@@ -326,6 +332,7 @@ def run_simulation(
     alive          = alive & aperture_ok(xl_wp6, yl_wp6)
     hit_wp6        = wire_hit(xl_wp6, WP_PITCH, WP_THICK * 0.5)
     pass_wp6       = ~hit_wp6
+    n_wire_wp6     = int((alive & hit_wp6).sum())
 
     # ── Grid 2 — STOP SIGNAL position ─────────────────────────────────────────
     # Stop is defined for any particle that reaches z_grid2 WITHOUT aperture loss.
@@ -336,9 +343,10 @@ def run_simulation(
     stop_signal  = reach_g2.copy()     # stop generated regardless of grid2 wire hit
 
     # Apply grid2 wire hit AFTER stop signal for IC reach tracking
-    hit_g2  = (wire_hit(xl_g2, GRID2_PITCH, GRID2_THICK * 0.5) |
-               wire_hit(yl_g2, GRID2_PITCH, GRID2_THICK * 0.5))
-    pass_g2 = reach_g2 & ~hit_g2
+    hit_g2    = (wire_hit(xl_g2, GRID2_PITCH, GRID2_THICK * 0.5) |
+                 wire_hit(yl_g2, GRID2_PITCH, GRID2_THICK * 0.5))
+    pass_g2   = reach_g2 & ~hit_g2
+    n_wire_g2 = int((reach_g2 & hit_g2).sum())
 
     # tof_defined = start AND stop (both start_signal and reach_g2 are per-event)
     tof_defined = start_signal & stop_signal
@@ -417,6 +425,16 @@ def run_simulation(
         frac_IC_of_union        = n_dic     / n_tof_or_ic if n_tof_or_ic else 0.0,
         frac_TOF_of_union       = n_tof_rec / n_tof_or_ic if n_tof_or_ic else 0.0,
         transmission_both_grids = n_pg2     / n_gen       if n_gen       else 0.0,
+
+        # ── Per-plane wire-hit counts (among particles alive at that plane) ──────
+        N_wire_hit_grid1 = n_wire_g1,
+        N_wire_hit_WP1   = n_wire_wp1,
+        N_wire_hit_WP2   = n_wire_wp2,
+        N_wire_hit_WP3   = n_wire_wp3,
+        N_wire_hit_WP4   = n_wire_wp4,
+        N_wire_hit_WP5   = n_wire_wp5,
+        N_wire_hit_WP6   = n_wire_wp6,
+        N_wire_hit_grid2 = n_wire_g2,
 
         tof_mean_ns        = tof_mean,
         tof_rms_ns         = tof_rms,

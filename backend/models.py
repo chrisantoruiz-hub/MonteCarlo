@@ -144,6 +144,16 @@ class SimStats(BaseModel):
     frac_IC_detected: float      # N_detected_IC  / N_generated
     frac_coincidence: float      # N_coin_TOF_IC  / N_generated
 
+    # Per-plane wire-hit counts (among particles geometrically alive at each plane)
+    N_wire_hit_grid1: int
+    N_wire_hit_WP1: int
+    N_wire_hit_WP2: int
+    N_wire_hit_WP3: int
+    N_wire_hit_WP4: int
+    N_wire_hit_WP5: int
+    N_wire_hit_WP6: int
+    N_wire_hit_grid2: int
+
     # TOF
     tof_mean_ns: float
     tof_rms_ns: float
