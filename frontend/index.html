@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monte Carlo Beamline Simulator v2</title>
+  <script src="https://cdn.plot.ly/plotly-2.34.0.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #d4d8e2;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(90deg, #1a1f2e 0%, #14192a 100%);
+      border-bottom: 1px solid #2a3050;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 600; color: #e2e8f0; letter-spacing: .01em; }
+    header .subtitle { font-size: .8rem; color: #6b7a99; margin-top: 1px; }
+    .badge {
+      background: #2563eb; color: #fff; font-size: .65rem; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px; letter-spacing: .04em;
+    }
+
+    .app { display: flex; flex: 1; overflow: hidden; }
+
+    #sidebar {
+      width: 300px; min-width: 270px; background: #13182a;
+      border-right: 1px solid #1e2640; display: flex; flex-direction: column;
+      overflow-y: auto; flex-shrink: 0;
+    }
+    .sidebar-section { padding: 12px 14px 8px; border-bottom: 1px solid #1e2640; }
+    .sidebar-section h3 {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #4a6fa5; margin-bottom: 10px;
+    }
+
+    .ctrl-row {
+      display: grid; grid-template-columns: 1fr auto;
+      align-items: center; gap: 6px; margin-bottom: 9px;
+    }
+    .ctrl-row label { font-size: .78rem; color: #8fa3c8; line-height: 1.2; }
+    .ctrl-row label .unit { color: #4a6fa5; font-size: .7rem; margin-left: 2px; }
+    .ctrl-row input[type="number"] {
+      width: 72px; background: #0c1020; border: 1px solid #2a3560; color: #d4d8e2;
+      border-radius: 4px; padding: 3px 6px; font-size: .78rem; text-align: right;
+    }
+    .ctrl-row input[type="number"]:focus { outline: none; border-color: #2563eb; }
+
+    .slider-row { margin-bottom: 10px; }
+    .slider-row .slider-header { display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .slider-row .slider-header span:first-child { font-size: .78rem; color: #8fa3c8; }
+    .slider-row .slider-header .val {
+      font-size: .78rem; font-weight: 600; color: #93c5fd; min-width: 70px; text-align: right;
+    }
+    input[type="range"] { width: 100%; accent-color: #2563eb; cursor: pointer; }
+
+    .toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .toggle-row label { font-size: .78rem; color: #8fa3c8; cursor: pointer; }
+    .toggle-row input[type="checkbox"] { accent-color: #2563eb; width: 14px; height: 14px; cursor: pointer; }
+
+    .btn-run {
+      margin: 12px 14px; width: calc(100% - 28px); padding: 10px 0;
+      background: #2563eb; color: #fff; font-size: .9rem; font-weight: 700;
+      border: none; border-radius: 6px; cursor: pointer; transition: background .15s;
+      letter-spacing: .03em;
+    }
+    .btn-run:hover:not(:disabled) { background: #1d4ed8; }
+    .btn-run:disabled { background: #1e3070; color: #4a6fa5; cursor: not-allowed; }
+
+    .btn-secondary {
+      margin: 0 14px 10px; width: calc(100% - 28px); padding: 7px 0;
+      background: transparent; color: #4a6fa5; font-size: .78rem;
+      border: 1px solid #2a3560; border-radius: 6px; cursor: pointer; transition: all .15s;
+    }
+    .btn-secondary:hover:not(:disabled) { border-color: #2563eb; color: #93c5fd; }
+    .btn-secondary:disabled { opacity: .4; cursor: not-allowed; }
+
+    #progress-wrap { margin: 0 14px 10px; display: none; }
+    #progress-wrap.visible { display: block; }
+    #progress-bar-outer { height: 4px; background: #1e2640; border-radius: 2px; overflow: hidden; }
+    #progress-bar-inner {
+      height: 100%; background: #2563eb; width: 0%; border-radius: 2px;
+      transition: width .3s; animation: pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    #progress-label { font-size: .68rem; color: #4a6fa5; margin-top: 4px; text-align: center; }
+
+    #stats-panel { padding: 10px 14px; flex-shrink: 0; }
+    #stats-panel h3 {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #4a6fa5; margin-bottom: 8px;
+    }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
+    .stat-item { background: #0c1020; border-radius: 4px; padding: 5px 7px; }
+    .stat-item .slabel { font-size: .65rem; color: #4a6fa5; text-transform: uppercase; letter-spacing: .05em; }
+    .stat-item .sval { font-size: .85rem; font-weight: 600; color: #93c5fd; margin-top: 1px; }
+    .stat-item.wide { grid-column: span 2; }
+    .stat-item.highlight .sval { color: #fbbf24; }
+
+    #error-banner {
+      display: none; margin: 8px 14px; padding: 8px 10px;
+      background: #3b0f0f; border: 1px solid #7f1d1d; border-radius: 5px;
+      font-size: .75rem; color: #fca5a5;
+    }
+    #error-banner.visible { display: block; }
+
+    #main {
+      flex: 1; overflow-y: auto; padding: 14px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .plot-section-title {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #4a6fa5;
+      padding-bottom: 4px; border-bottom: 1px solid #1e2640;
+    }
+    .plot-grid { display: grid; gap: 10px; }
+    .plot-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .plot-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .plot-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .plot-card {
+      background: #13182a; border: 1px solid #1e2640;
+      border-radius: 8px; overflow: hidden; min-height: 220px;
+    }
+    .plot-card .plot-div { width: 100%; height: 220px; }
+
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 400px; color: #2a3560; gap: 10px;
+    }
+    .empty-state svg { opacity: .4; }
+    .empty-state p { font-size: .9rem; color: #3a4a6b; }
+
+    /* Derived quantities panel */
+    #derived-panel {
+      background: #13182a; border: 1px solid #1e2640; border-radius: 8px; padding: 16px 20px;
+    }
+    #derived-panel h4 {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: #4a6fa5; margin-bottom: 14px;
+    }
+    .derived-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 900px) { .derived-grid { grid-template-columns: 1fr; } }
+    .derived-card {
+      background: #0c1020; border: 1px solid #1e2640; border-radius: 6px;
+      padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .derived-card.coin { border-color: #ca8a04; }
+    .derived-card .dc-index { font-size: .65rem; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: .08em; }
+    .derived-card.coin .dc-index { color: #fbbf24; }
+    .derived-card .dc-label { font-size: .8rem; color: #8fa3c8; line-height: 1.4; }
+    .derived-card .dc-formula {
+      font-family: 'Courier New', monospace; font-size: .75rem; color: #4a6fa5;
+      background: #0a0e1a; border-radius: 4px; padding: 5px 8px; line-height: 1.5;
+    }
+    .derived-card .dc-value { font-size: 1.6rem; font-weight: 700; color: #93c5fd; letter-spacing: -.01em; }
+    .derived-card.coin .dc-value { color: #fbbf24; }
+    .derived-card .dc-counts { font-size: .72rem; color: #4a6fa5; }
+
+    /* Offsets table */
+    #offsets-panel {
+      background: #13182a; border: 1px solid #1e2640; border-radius: 8px; padding: 14px 16px;
+    }
+    #offsets-panel h4 {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #4a6fa5; margin-bottom: 10px;
+    }
+    .offsets-table { width: 100%; border-collapse: collapse; font-size: .75rem; }
+    .offsets-table th {
+      text-align: left; color: #4a6fa5; font-weight: 600; font-size: .68rem;
+      text-transform: uppercase; letter-spacing: .06em; padding: 4px 10px 6px;
+      border-bottom: 1px solid #1e2640;
+    }
+    .offsets-table td {
+      padding: 4px 10px; color: #8fa3c8; border-bottom: 1px solid #0c1020;
+    }
+    .offsets-table tr:last-child td { border-bottom: none; }
+    .offsets-table td.mono { font-family: 'Courier New', monospace; color: #93c5fd; }
+
+    #geometry-card {
+      background: #13182a; border: 1px solid #1e2640; border-radius: 8px; padding: 12px 16px;
+    }
+    #geometry-card h4 {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: #4a6fa5; margin-bottom: 10px;
+    }
+    .beamline-svg-wrap { overflow-x: auto; }
+
+    @media (max-width: 1100px) {
+      .plot-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+      .plot-grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .app { flex-direction: column; }
+      #sidebar { width: 100%; min-width: unset; border-right: none; border-bottom: 1px solid #1e2640; }
+      .plot-grid.cols-4, .plot-grid.cols-3, .plot-grid.cols-2 { grid-template-columns: 1fr; }
+    }
+
+    /* Plane geometry grid */
+    .geo-plane-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .geo-card {
+      background: #13182a; border: 1px solid #1e2640;
+      border-radius: 8px; overflow: hidden; padding: 4px;
+    }
+    @media (max-width: 1100px) { .geo-plane-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 700px)  { .geo-plane-grid { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Monte Carlo Beamline Simulator</h1>
+    <div class="subtitle">MCP1 + MCP2 geometry · 45° wire planes · Coincidence tracking · Random offsets</div>
+  </div>
+  <span class="badge">v2.0</span>
+</header>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+
+    <div class="sidebar-section">
+      <h3>Events</h3>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>N events</span>
+          <span class="val" id="lbl-N">200 000</span>
+        </div>
+        <input type="range" id="sl-N" min="10000" max="2000000" step="10000" value="200000"
+               oninput="syncSlider('N', this.value, fmtInt)">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Beam Source</h3>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>D<sub>source</sub> <span class="unit">cm</span></span>
+          <span class="val" id="lbl-D_source">50 cm</span>
+        </div>
+        <input type="range" id="sl-D_source" min="5" max="300" step="1" value="50"
+               oninput="syncSlider('D_source', this.value, v => v+' cm')">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>Spot FWHM <span class="unit">mm</span></span>
+          <span class="val" id="lbl-fwhm_xy">2.00 mm</span>
+        </div>
+        <input type="range" id="sl-fwhm_xy" min="0.1" max="20" step="0.1" value="2"
+               oninput="syncSlider('fwhm_xy', this.value, v => parseFloat(v).toFixed(2)+' mm')">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>Angle FWHM <span class="unit">mrad</span></span>
+          <span class="val" id="lbl-fwhm_angle">2.00 mrad</span>
+        </div>
+        <input type="range" id="sl-fwhm_angle" min="0.1" max="50" step="0.1" value="2"
+               oninput="syncSlider('fwhm_angle', this.value, v => parseFloat(v).toFixed(2)+' mrad')">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Particle</h3>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>Energy <span class="unit">MeV/u</span></span>
+          <span class="val" id="lbl-energy">1.00 MeV/u</span>
+        </div>
+        <input type="range" id="sl-energy" min="0.1" max="100" step="0.1" value="1"
+               oninput="syncSlider('energy', this.value, v => parseFloat(v).toFixed(2)+' MeV/u')">
+      </div>
+      <div class="ctrl-row" style="margin-bottom:6px">
+        <label>Mass number <em>A</em></label>
+        <input type="number" id="inp-A" value="12" min="1" max="250">
+      </div>
+      <div class="ctrl-row">
+        <label>Atomic number <em>Z</em></label>
+        <input type="number" id="inp-Z" value="6" min="1" max="120">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Efficiencies</h3>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>&#951;<sub>MCP</sub></span>
+          <span class="val" id="lbl-eta_MCP">0.950</span>
+        </div>
+        <input type="range" id="sl-eta_MCP" min="0" max="1" step="0.01" value="0.95"
+               oninput="syncSlider('eta_MCP', this.value, v => parseFloat(v).toFixed(3))">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>&#951;<sub>IC</sub></span>
+          <span class="val" id="lbl-eta_IC">0.950</span>
+        </div>
+        <input type="range" id="sl-eta_IC" min="0" max="1" step="0.01" value="0.95"
+               oninput="syncSlider('eta_IC', this.value, v => parseFloat(v).toFixed(3))">
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>TOF resolution <span class="unit">ps FWHM</span></span>
+          <span class="val" id="lbl-tof_fwhm">400 ps</span>
+        </div>
+        <input type="range" id="sl-tof_fwhm" min="0" max="2000" step="10" value="400"
+               oninput="syncSlider('tof_fwhm', this.value, v => v+' ps')">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Plane Offsets</h3>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>Offset amplitude <span class="unit">mm</span></span>
+          <span class="val" id="lbl-offset_amp">0.50 mm</span>
+        </div>
+        <input type="range" id="sl-offset_amp" min="0" max="5" step="0.05" value="0.5"
+               oninput="syncSlider('offset_amp', this.value, v => parseFloat(v).toFixed(2)+' mm')">
+      </div>
+      <div class="ctrl-row">
+        <label>Offset seed<br><span class="unit">(blank = random)</span></label>
+        <input type="number" id="inp-offset-seed" value="" placeholder="—" min="0" style="width:72px">
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Advanced</h3>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span>Histogram bins</span>
+          <span class="val" id="lbl-nbins">100</span>
+        </div>
+        <input type="range" id="sl-nbins" min="20" max="500" step="10" value="100"
+               oninput="syncSlider('nbins', this.value, v => v)">
+      </div>
+      <div class="ctrl-row">
+        <label>Physics seed<br><span class="unit">(blank = random)</span></label>
+        <input type="number" id="inp-seed" value="" placeholder="—" min="0" style="width:72px">
+      </div>
+      <div class="toggle-row" style="margin-top:6px">
+        <input type="checkbox" id="chk-relativistic" checked>
+        <label for="chk-relativistic">Relativistic timing</label>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="chk-ic-det" checked>
+        <label for="chk-ic-det">IC hist: detected only</label>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h3>Backend</h3>
+      <div class="ctrl-row">
+        <label>API URL</label>
+        <input type="text" id="inp-api" value="http://localhost:8000"
+               style="width:160px;font-size:.72rem;background:#0c1020;border:1px solid #2a3560;color:#8fa3c8;border-radius:4px;padding:3px 5px;">
+      </div>
+    </div>
+
+    <button class="btn-run" id="btn-run" onclick="runSim()">&#9654; Run Simulation</button>
+    <button class="btn-secondary" id="btn-export" onclick="exportCSV()" disabled>&#8595; Export CSV (&#8804;50k)</button>
+
+    <div id="progress-wrap">
+      <div id="progress-bar-outer"><div id="progress-bar-inner"></div></div>
+      <div id="progress-label">Running...</div>
+    </div>
+    <div id="error-banner"></div>
+
+    <div id="stats-panel">
+      <h3>Summary</h3>
+      <div class="stat-grid" id="stat-grid">
+        <div class="stat-item wide" style="color:#3a4a6b;font-size:.75rem;text-align:center;padding:10px">
+          Run a simulation to see results.
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- Main content -->
+  <main id="main">
+
+    <div id="geometry-card">
+      <h4>Beamline Layout (not to scale) — MCP1: grid1+WP1-3 | MCP2: WP4-6+grid2 | IC</h4>
+      <div class="beamline-svg-wrap">
+        <svg id="beamline-svg" width="960" height="80" xmlns="http://www.w3.org/2000/svg"
+             style="display:block; min-width:600px"></svg>
+      </div>
+    </div>
+
+    <div id="empty-state" class="empty-state">
+      <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <p>Configure parameters and click <strong>Run Simulation</strong></p>
+    </div>
+
+    <div id="plots-wrap" style="display:none; flex-direction:column; gap:12px">
+
+      <div class="plot-section-title">Initial Phase Space (all generated events)</div>
+      <div class="plot-grid cols-4">
+        <div class="plot-card"><div class="plot-div" id="plt-x0"></div></div>
+        <div class="plot-card"><div class="plot-div" id="plt-y0"></div></div>
+        <div class="plot-card"><div class="plot-div" id="plt-tx"></div></div>
+        <div class="plot-card"><div class="plot-div" id="plt-ty"></div></div>
+      </div>
+
+      <div class="plot-section-title">Final Position at IC Plane</div>
+      <div class="plot-grid cols-3">
+        <div class="plot-card"><div class="plot-div" id="plt-x_ic"></div></div>
+        <div class="plot-card"><div class="plot-div" id="plt-y_ic"></div></div>
+        <div class="plot-card"><div class="plot-div" id="plt-tof"></div></div>
+      </div>
+
+      <div class="plot-section-title">2D Position Map at IC Plane</div>
+      <div class="plot-grid cols-2">
+        <div class="plot-card" style="min-height:480px">
+          <div class="plot-div" id="plt-scatter-ic" style="height:480px"></div>
+        </div>
+        <div class="plot-card" style="min-height:480px">
+          <div class="plot-div" id="plt-heatmap-ic" style="height:480px"></div>
+        </div>
+      </div>
+
+      <!-- Derived Quantities -->
+      <div class="plot-section-title">Measured Rates (relative to N generated)</div>
+      <div id="derived-panel">
+        <div class="derived-grid" id="derived-grid">
+          <!-- filled by renderDerivedQuantities() -->
+        </div>
+      </div>
+
+      <!-- Plane Offsets Table -->
+      <div class="plot-section-title">Per-Plane Random Offsets (this run)</div>
+      <div id="offsets-panel">
+        <table class="offsets-table" id="offsets-table">
+          <thead>
+            <tr>
+              <th>Plane</th><th>z (m)</th><th>dx (mm)</th><th>dy (mm)</th>
+            </tr>
+          </thead>
+          <tbody id="offsets-tbody"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /plots-wrap -->
+
+    <!-- Plane Geometry z-views -->
+    <div class="plot-section-title">Plane Geometry — z-view, 5 × 5 cm aperture (wire thickness ×8 exaggerated)</div>
+    <div class="geo-plane-grid">
+      <div class="geo-card" id="geo-grid1"></div>
+      <div class="geo-card" id="geo-wp1"></div>
+      <div class="geo-card" id="geo-wp2"></div>
+      <div class="geo-card" id="geo-wp3"></div>
+      <div class="geo-card" id="geo-wp4"></div>
+      <div class="geo-card" id="geo-wp5"></div>
+      <div class="geo-card" id="geo-wp6"></div>
+      <div class="geo-card" id="geo-grid2"></div>
+    </div>
+
+  </main>
+
+</div><!-- /app -->
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════════
+   STATE
+   ════════════════════════════════════════════════════════════════════════════ */
+let lastStats = null;
+let simRunning = false;
+
+/* ════════════════════════════════════════════════════════════════════════════
+   UTILITIES
+   ════════════════════════════════════════════════════════════════════════════ */
+function fmtInt(v) { return parseInt(v).toLocaleString('en-US'); }
+function pct(v)    { return (v * 100).toFixed(3) + ' %'; }
+function fmt(v, dp) { return dp === 0 || dp === undefined ? parseInt(v).toLocaleString('en-US') : v.toFixed(dp); }
+
+function syncSlider(key, value, formatter) {
+  const lbl = document.getElementById('lbl-' + key);
+  if (lbl) lbl.textContent = formatter(value);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PARAMETER COLLECTION
+   ════════════════════════════════════════════════════════════════════════════ */
+function getParams() {
+  const seedRaw   = document.getElementById('inp-seed').value.trim();
+  const offSeedRaw = document.getElementById('inp-offset-seed').value.trim();
+  return {
+    N:                parseInt(document.getElementById('sl-N').value),
+    D_source:         parseFloat(document.getElementById('sl-D_source').value) / 100,
+    fwhm_xy:          parseFloat(document.getElementById('sl-fwhm_xy').value) / 1000,
+    fwhm_angle:       parseFloat(document.getElementById('sl-fwhm_angle').value) / 1000,
+    energy_mev_per_u: parseFloat(document.getElementById('sl-energy').value),
+    A:                parseInt(document.getElementById('inp-A').value),
+    Z:                parseInt(document.getElementById('inp-Z').value),
+    eta_MCP:          parseFloat(document.getElementById('sl-eta_MCP').value),
+    eta_IC:           parseFloat(document.getElementById('sl-eta_IC').value),
+    tof_fwhm_ps:      parseFloat(document.getElementById('sl-tof_fwhm').value),
+    n_bins:           parseInt(document.getElementById('sl-nbins').value),
+    offset_amp_mm:    parseFloat(document.getElementById('sl-offset_amp').value),
+    offset_seed:      offSeedRaw === '' ? null : parseInt(offSeedRaw),
+    seed:             seedRaw === '' ? null : parseInt(seedRaw),
+    relativistic:     document.getElementById('chk-relativistic').checked,
+    fill_ic_detected: document.getElementById('chk-ic-det').checked,
+  };
+}
+
+function apiBase() {
+  return document.getElementById('inp-api').value.trim().replace(/\/$/, '');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PROGRESS / ERROR UI
+   ════════════════════════════════════════════════════════════════════════════ */
+function showProgress(msg) {
+  document.getElementById('progress-wrap').classList.add('visible');
+  document.getElementById('progress-label').textContent = msg || 'Running...';
+  document.getElementById('progress-bar-inner').style.width = '60%';
+}
+function hideProgress() {
+  document.getElementById('progress-wrap').classList.remove('visible');
+  document.getElementById('progress-bar-inner').style.width = '0%';
+}
+function showError(msg) {
+  const el = document.getElementById('error-banner');
+  el.textContent = 'Error: ' + msg;
+  el.classList.add('visible');
+}
+function clearError() { document.getElementById('error-banner').classList.remove('visible'); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PLOTLY HISTOGRAM RENDERER
+   ════════════════════════════════════════════════════════════════════════════ */
+const PLOT_COLORS = {
+  x0: '#3b82f6', y0: '#8b5cf6',
+  tx: '#06b6d4', ty: '#10b981',
+  x_ic: '#f59e0b', y_ic: '#ef4444',
+  tof: '#a855f7',
+};
+
+const PLOT_LAYOUT_BASE = {
+  paper_bgcolor: '#13182a',
+  plot_bgcolor:  '#0c1020',
+  font: { family: "'Segoe UI', system-ui, sans-serif", size: 11, color: '#8fa3c8' },
+  margin: { l: 46, r: 10, t: 32, b: 42 },
+  bargap: 0.03,
+  xaxis: {
+    gridcolor: '#1a2240', zerolinecolor: '#2a3560',
+    tickfont: { size: 10 }, title: { font: { size: 11 } }
+  },
+  yaxis: {
+    gridcolor: '#1a2240', zerolinecolor: '#2a3560',
+    tickfont: { size: 10 }, title: { font: { size: 11, color: '#4a6fa5' } },
+    title: { text: 'Counts' }
+  },
+  title: { font: { size: 12, color: '#c7d2e8' }, x: 0.5, xanchor: 'center' },
+};
+
+function renderHist(divId, hist, colorKey) {
+  const edges   = hist.edges;
+  const counts  = hist.counts;
+  const n       = edges.length - 1;
+  const centers = Array.from({ length: n }, (_, i) => (edges[i] + edges[i + 1]) / 2);
+  const widths  = Array.from({ length: n }, (_, i) => edges[i + 1] - edges[i]);
+  const color   = PLOT_COLORS[colorKey] || '#3b82f6';
+
+  let annotation = '';
+  if (hist.mean !== null && hist.std !== null) {
+    annotation = `mu=${hist.mean.toPrecision(4)}  sigma=${hist.std.toPrecision(3)}`;
+  }
+  if (hist.n !== null) annotation = `N=${hist.n.toLocaleString()}  ` + annotation;
+
+  const trace = {
+    type: 'bar', x: centers, y: counts, width: widths,
+    marker: { color, opacity: 0.85, line: { color, width: 0.3 } },
+    hovertemplate: `${hist.xlabel}: %{x:.4g}<br>Counts: %{y}<extra></extra>`,
+  };
+
+  const layout = Object.assign({}, PLOT_LAYOUT_BASE, {
+    title: { ...PLOT_LAYOUT_BASE.title, text: hist.label },
+    xaxis: { ...PLOT_LAYOUT_BASE.xaxis, title: { text: hist.xlabel, font: { size: 11 } } },
+    annotations: annotation ? [{
+      text: annotation, xref: 'paper', yref: 'paper',
+      x: 0.5, y: 1.01, xanchor: 'center', yanchor: 'bottom',
+      showarrow: false, font: { size: 9, color: '#4a6fa5' },
+    }] : [],
+  });
+
+  Plotly.react(divId, [trace], layout, { responsive: true, displayModeBar: false });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   STATS PANEL
+   ════════════════════════════════════════════════════════════════════════════ */
+function renderStats(s) {
+  const items = [
+    ['Generated',        fmt(s.N_generated)],
+    ['Pass grid1 (start)', fmt(s.N_pass_grid1) + ' (' + pct(s.frac_pass_grid1) + ')'],
+    ['Reach grid2 (stop)', fmt(s.N_reach_grid2)],
+    ['TOF defined',      fmt(s.N_tof_defined)],
+    ['TOF recorded',     fmt(s.N_tof_recorded) + ' (' + pct(s.frac_tof_recorded_of_defined) + ')'],
+    ['Pass grid2',       fmt(s.N_pass_grid2)],
+    ['Reach IC (geom.)', fmt(s.N_reach_IC_geometric)],
+    ['Detected IC',      fmt(s.N_detected_IC) + ' (' + pct(s.frac_IC_det_of_geometric) + ')'],
+    ['COINCIDENCE',      fmt(s.N_coin_TOF_IC) + ' (' + pct(s.frac_coincidence) + ')', true],
+    ['TOF mean',         fmt(s.tof_mean_ns, 4) + ' ns'],
+    ['TOF RMS',          fmt(s.tof_rms_ns, 6) + ' ns'],
+    ['beta',             s.beta.toFixed(6)],
+    ['gamma',            s.gamma.toFixed(6)],
+    ['v',                (s.velocity_m_per_s / 1e6).toFixed(3) + ' Mm/s'],
+    ['Elapsed',          s.elapsed_s.toFixed(2) + ' s'],
+  ];
+
+  const grid = document.getElementById('stat-grid');
+  grid.innerHTML = items.map(([label, val, highlight]) => `
+    <div class="stat-item${highlight ? ' highlight' : ''}">
+      <div class="slabel">${label}</div>
+      <div class="sval">${val}</div>
+    </div>
+  `).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   2-D SCATTER PLOT
+   ════════════════════════════════════════════════════════════════════════════ */
+function renderScatterIC(scatter) {
+  const nLabel = scatter.n_shown < scatter.n_total
+    ? `${scatter.n_shown.toLocaleString()} of ${scatter.n_total.toLocaleString()} shown (random sample)`
+    : `${scatter.n_total.toLocaleString()} events`;
+
+  const trace = {
+    type: 'scattergl', mode: 'markers', x: scatter.x, y: scatter.y,
+    marker: { size: 3, opacity: 0.55, color: '#f59e0b', line: { width: 0 } },
+    hovertemplate: 'x_IC: %{x:.3f} mm<br>y_IC: %{y:.3f} mm<extra></extra>',
+    name: 'IC events',
+  };
+
+  const apertureShape = {
+    type: 'rect', x0: -25, y0: -25, x1: 25, y1: 25,
+    line: { color: '#2563eb', width: 1.5, dash: 'dot' },
+    fillcolor: 'rgba(0,0,0,0)', layer: 'above',
+  };
+
+  const layout = Object.assign({}, PLOT_LAYOUT_BASE, {
+    title: { ...PLOT_LAYOUT_BASE.title, text: 'x_IC vs y_IC' },
+    xaxis: {
+      ...PLOT_LAYOUT_BASE.xaxis,
+      title: { text: 'x_IC (mm)', font: { size: 11 } },
+      scaleanchor: 'y', scaleratio: 1, zeroline: true, zerolinecolor: '#2a3560', range: [-30, 30],
+    },
+    yaxis: {
+      ...PLOT_LAYOUT_BASE.yaxis,
+      title: { text: 'y_IC (mm)', font: { size: 11, color: '#8fa3c8' } },
+      zeroline: true, zerolinecolor: '#2a3560', range: [-30, 30],
+    },
+    shapes: [apertureShape],
+    annotations: [{ text: nLabel, xref: 'paper', yref: 'paper', x: 0.5, y: 1.01,
+      xanchor: 'center', yanchor: 'bottom', showarrow: false, font: { size: 9, color: '#4a6fa5' } }],
+    margin: { l: 52, r: 16, t: 36, b: 52 },
+  });
+
+  Plotly.react('plt-scatter-ic', [trace], layout, { responsive: true, displayModeBar: false });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   2-D HEATMAP
+   ════════════════════════════════════════════════════════════════════════════ */
+function renderHeatmapIC(h2d) {
+  const xc = h2d.x_edges.slice(0, -1).map((e, i) => (e + h2d.x_edges[i + 1]) / 2);
+  const yc = h2d.y_edges.slice(0, -1).map((e, i) => (e + h2d.y_edges[i + 1]) / 2);
+
+  const trace = {
+    type: 'heatmap', x: xc, y: yc, z: h2d.counts,
+    colorscale: 'Hot', reversescale: false, showscale: true, zsmooth: false,
+    hovertemplate: 'x_IC: %{x:.1f} mm<br>y_IC: %{y:.1f} mm<br>Counts: %{z}<extra></extra>',
+    colorbar: {
+      thickness: 12, len: 0.85, tickfont: { size: 9, color: '#8fa3c8' },
+      outlinecolor: '#1e2640', bgcolor: 'rgba(0,0,0,0)',
+    },
+  };
+
+  const apertureShape = {
+    type: 'rect', x0: -25, y0: -25, x1: 25, y1: 25,
+    line: { color: '#60a5fa', width: 1.5, dash: 'dot' },
+    fillcolor: 'rgba(0,0,0,0)', layer: 'above',
+  };
+
+  const layout = Object.assign({}, PLOT_LAYOUT_BASE, {
+    title: { ...PLOT_LAYOUT_BASE.title, text: `x_IC vs y_IC - ${h2d.bin_size_mm} mm bins` },
+    xaxis: {
+      ...PLOT_LAYOUT_BASE.xaxis,
+      title: { text: 'x_IC (mm)', font: { size: 11 } },
+      scaleanchor: 'y', scaleratio: 1, range: [-30, 30],
+    },
+    yaxis: {
+      ...PLOT_LAYOUT_BASE.yaxis,
+      title: { text: 'y_IC (mm)', font: { size: 11, color: '#8fa3c8' } },
+      range: [-30, 30],
+    },
+    shapes: [apertureShape],
+    annotations: [{ text: `N = ${h2d.n_total.toLocaleString()} events (all IC detections)`,
+      xref: 'paper', yref: 'paper', x: 0.5, y: 1.01,
+      xanchor: 'center', yanchor: 'bottom', showarrow: false, font: { size: 9, color: '#4a6fa5' } }],
+    margin: { l: 52, r: 60, t: 36, b: 52 },
+  });
+
+  Plotly.react('plt-heatmap-ic', [trace], layout, { responsive: true, displayModeBar: false });
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DERIVED QUANTITIES PANEL
+   Section 5: three headline rates + coincidence as primary
+   ════════════════════════════════════════════════════════════════════════════ */
+function renderDerivedQuantities(s) {
+  const cards = [
+    {
+      index: 'TOF Recorded Fraction',
+      label: 'Events with TOF_MCP recorded / N generated',
+      formula: `N_tof_recorded / N_generated\n= ${fmt(s.N_tof_recorded)} / ${fmt(s.N_generated)}`,
+      value: pct(s.frac_tof_recorded),
+      counts: `N_tof_recorded = ${fmt(s.N_tof_recorded)}`,
+      coin: false,
+    },
+    {
+      index: 'IC Detected Fraction',
+      label: 'Events detected in IC / N generated',
+      formula: `N_IC_detected / N_generated\n= ${fmt(s.N_detected_IC)} / ${fmt(s.N_generated)}`,
+      value: pct(s.frac_IC_detected),
+      counts: `N_IC_detected = ${fmt(s.N_detected_IC)}`,
+      coin: false,
+    },
+    {
+      index: 'COINCIDENCE Fraction',
+      label: 'Events with BOTH TOF recorded AND IC detected / N generated',
+      formula: `N_coin_TOF_IC / N_generated\n= ${fmt(s.N_coin_TOF_IC)} / ${fmt(s.N_generated)}`,
+      value: pct(s.frac_coincidence),
+      counts: `N_coin = ${fmt(s.N_coin_TOF_IC)}  (primary "measured" sample)`,
+      coin: true,
+    },
+    {
+      index: 'Grid Transmission',
+      label: 'Events passing both grid1 AND grid2 / N generated',
+      formula: `N_pass_grid2 / N_generated\n= ${fmt(s.N_pass_grid2)} / ${fmt(s.N_generated)}`,
+      value: pct(s.transmission_both_grids),
+      counts: `N_pass_grid2 = ${fmt(s.N_pass_grid2)}`,
+      coin: false,
+    },
+    {
+      index: 'IC fraction of union',
+      label: 'N_IC / (N_IC union N_TOF)',
+      formula: `N_IC / (N_IC | N_TOF)\n= ${fmt(s.N_detected_IC)} / ${fmt(s.N_tof_or_ic)}`,
+      value: pct(s.frac_IC_of_union),
+      counts: `union = ${fmt(s.N_tof_or_ic)}`,
+      coin: false,
+    },
+    {
+      index: 'TOF fraction of union',
+      label: 'N_TOF / (N_IC union N_TOF)',
+      formula: `N_TOF / (N_IC | N_TOF)\n= ${fmt(s.N_tof_recorded)} / ${fmt(s.N_tof_or_ic)}`,
+      value: pct(s.frac_TOF_of_union),
+      counts: `union = ${fmt(s.N_tof_or_ic)}`,
+      coin: false,
+    },
+  ];
+
+  document.getElementById('derived-grid').innerHTML = cards.map(c => `
+    <div class="derived-card${c.coin ? ' coin' : ''}">
+      <div class="dc-index">${c.index}</div>
+      <div class="dc-label">${c.label}</div>
+      <pre class="dc-formula">${c.formula}</pre>
+      <div class="dc-value">${c.value}</div>
+      <div class="dc-counts">${c.counts}</div>
+    </div>
+  `).join('');
+
+  // Expand to 3 columns (all 6 cards)
+  document.getElementById('derived-grid').style.gridTemplateColumns = 'repeat(3, 1fr)';
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PLANE OFFSETS TABLE
+   ════════════════════════════════════════════════════════════════════════════ */
+function renderOffsets(offsets) {
+  const tbody = document.getElementById('offsets-tbody');
+  tbody.innerHTML = offsets.map(o => `
+    <tr>
+      <td>${o.name}</td>
+      <td class="mono">${o.z_m.toFixed(3)}</td>
+      <td class="mono">${o.dx_mm > 0 ? '+' : ''}${o.dx_mm.toFixed(4)}</td>
+      <td class="mono">${o.dy_mm > 0 ? '+' : ''}${o.dy_mm.toFixed(4)}</td>
+    </tr>
+  `).join('');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   RUN SIMULATION
+   ════════════════════════════════════════════════════════════════════════════ */
+async function runSim() {
+  if (simRunning) return;
+  simRunning = true;
+  clearError();
+
+  const params  = getParams();
+  const runBtn  = document.getElementById('btn-run');
+  const expBtn  = document.getElementById('btn-export');
+  runBtn.disabled = true;
+  expBtn.disabled = true;
+
+  showProgress(`Running ${params.N.toLocaleString()} events...`);
+
+  try {
+    const resp = await fetch(`${apiBase()}/simulate`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(params),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ detail: resp.statusText }));
+      throw new Error(err.detail || resp.statusText);
+    }
+
+    const data = await resp.json();
+
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('plots-wrap').style.display  = 'flex';
+
+    const hists = data.histograms;
+    renderHist('plt-x0',   hists.x0,   'x0');
+    renderHist('plt-y0',   hists.y0,   'y0');
+    renderHist('plt-tx',   hists.tx,   'tx');
+    renderHist('plt-ty',   hists.ty,   'ty');
+    renderHist('plt-x_ic', hists.x_ic, 'x_ic');
+    renderHist('plt-y_ic', hists.y_ic, 'y_ic');
+    renderHist('plt-tof',  hists.tof,  'tof');
+
+    lastStats = data.stats;
+    renderStats(data.stats);
+    renderDerivedQuantities(data.stats);
+    renderScatterIC(data.scatter_ic);
+    renderHeatmapIC(data.hist2d_ic);
+    renderOffsets(data.plane_offsets);
+
+    expBtn.disabled = false;
+
+  } catch (err) {
+    showError(err.message || 'Network error - is the backend running?');
+  } finally {
+    hideProgress();
+    runBtn.disabled = false;
+    simRunning = false;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   EXPORT CSV
+   ════════════════════════════════════════════════════════════════════════════ */
+async function exportCSV() {
+  const params = getParams();
+  const body   = { N_export: Math.min(params.N, 50000), sim_params: params };
+
+  try {
+    const resp = await fetch(`${apiBase()}/export`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+    if (!resp.ok) throw new Error(resp.statusText);
+
+    const blob = await resp.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'mc_export.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    showError('Export failed: ' + err.message);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   BEAMLINE SCHEMATIC
+   Updated for new geometry: z_grid2=0.520, z_IC=0.620
+   WP1-3 at MCP1 (near grid1), WP4-6 at MCP2 (near grid2)
+   ════════════════════════════════════════════════════════════════════════════ */
+function drawBeamline() {
+  const svg = document.getElementById('beamline-svg');
+  const W = 960, H = 80, yc = H / 2, pad = 36;
+  const drawW = W - 2 * pad;
+
+  // All z values relative to beam entry; source at -0.5, IC at 0.620
+  const Z_MIN = -0.50, Z_MAX = 0.620;
+  const Z_SPAN = Z_MAX - Z_MIN;
+  const toX = z => pad + ((z - Z_MIN) / Z_SPAN) * drawW;
+
+  const elements = [
+    { z: -0.500, label: 'Source',  color: '#4ade80',  type: 'dot'  },
+    { z:  0.000, label: 'Grid1',   color: '#3b82f6',  type: 'mesh' },
+    { z:  0.010, label: 'WP1',     color: '#64748b',  type: 'wire', note: 'x' },
+    { z:  0.035, label: 'WP2',     color: '#94a3b8',  type: 'wire', note: '45' },
+    { z:  0.037, label: 'WP3',     color: '#94a3b8',  type: 'wire', note: '45' },
+    { z:  0.481, label: 'WP4',     color: '#64748b',  type: 'wire', note: '-45' },
+    { z:  0.483, label: 'WP5',     color: '#94a3b8',  type: 'wire', note: '-45' },
+    { z:  0.508, label: 'WP6',     color: '#64748b',  type: 'wire', note: 'x' },
+    { z:  0.520, label: 'Grid2',   color: '#8b5cf6',  type: 'mesh' },
+    { z:  0.620, label: 'IC',      color: '#f59e0b',  type: 'ic'   },
+  ];
+
+  let inner = `
+    <defs>
+      <marker id="arr" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+        <polygon points="0 0, 5 2.5, 0 5" fill="#1e2640"/>
+      </marker>
+    </defs>
+    <line x1="${pad}" y1="${yc}" x2="${W - pad}" y2="${yc}"
+          stroke="#1e2640" stroke-width="1.5" stroke-dasharray="4,3"/>
+  `;
+
+  // MCP1 bracket — extends to WP3 at z=0.037
+  const xMcp1a = toX(-0.002), xMcp1b = toX(0.039);
+  inner += `<rect x="${xMcp1a}" y="4" width="${xMcp1b - xMcp1a}" height="${H - 8}"
+                  fill="none" stroke="#1e3a5a" stroke-width="1" rx="2" stroke-dasharray="3,2"/>
+            <text x="${(xMcp1a + xMcp1b)/2}" y="12" text-anchor="middle"
+                  font-size="8" fill="#1e3a5a" font-family="monospace">MCP1</text>`;
+
+  // MCP2 bracket — extends from WP4 at z=0.481 to grid2 at z=0.520
+  const xMcp2a = toX(0.479), xMcp2b = toX(0.522);
+  inner += `<rect x="${xMcp2a}" y="4" width="${xMcp2b - xMcp2a}" height="${H - 8}"
+                  fill="none" stroke="#3a1e5a" stroke-width="1" rx="2" stroke-dasharray="3,2"/>
+            <text x="${(xMcp2a + xMcp2b)/2}" y="12" text-anchor="middle"
+                  font-size="8" fill="#3a1e5a" font-family="monospace">MCP2</text>`;
+
+  // Elements
+  for (const el of elements) {
+    const x = toX(el.z);
+    if (el.type === 'dot') {
+      inner += `<circle cx="${x}" cy="${yc}" r="5" fill="${el.color}" opacity="0.9"/>`;
+    } else if (el.type === 'wire') {
+      if (el.note === 'x') {
+        // vertical wires
+        inner += `<line x1="${x}" y1="${yc - 16}" x2="${x}" y2="${yc + 16}"
+                        stroke="${el.color}" stroke-width="2" opacity="0.85"/>`;
+      } else if (el.note === '45') {
+        // +45° diagonal / (bottom-left to top-right)
+        inner += `<line x1="${x - 8}" y1="${yc + 12}" x2="${x + 8}" y2="${yc - 12}"
+                        stroke="${el.color}" stroke-width="2" opacity="0.85"/>`;
+      } else {
+        // −45° diagonal \ (top-left to bottom-right)
+        inner += `<line x1="${x - 8}" y1="${yc - 12}" x2="${x + 8}" y2="${yc + 12}"
+                        stroke="${el.color}" stroke-width="2" opacity="0.85"/>`;
+      }
+    } else if (el.type === 'mesh') {
+      inner += `<line x1="${x - 1}" y1="${yc - 18}" x2="${x - 1}" y2="${yc + 18}"
+                      stroke="${el.color}" stroke-width="2"/>
+                <line x1="${x + 1}" y1="${yc - 18}" x2="${x + 1}" y2="${yc + 18}"
+                      stroke="${el.color}" stroke-width="2"/>`;
+    } else if (el.type === 'ic') {
+      inner += `<rect x="${x - 4}" y="${yc - 20}" width="8" height="40"
+                      fill="${el.color}" opacity="0.7" rx="1"/>`;
+    }
+    const dy = (el.type === 'dot') ? -12 : -24;
+    inner += `<text x="${x}" y="${yc + dy}" text-anchor="middle"
+                    font-size="8" fill="${el.color}" font-family="monospace">${el.label}</text>`;
+    inner += `<text x="${x}" y="${yc + 30}" text-anchor="middle"
+                    font-size="7" fill="#2a3560">${el.z.toFixed(3)}</text>`;
+  }
+
+  // Beam arrows
+  for (let xi = pad + 20; xi < W - pad - 20; xi += 80) {
+    inner += `<line x1="${xi}" y1="${yc}" x2="${xi + 20}" y2="${yc}"
+                    stroke="#1e2640" stroke-width="1" marker-end="url(#arr)"/>`;
+  }
+
+  svg.innerHTML = inner;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PLANE GEOMETRY Z-VIEW PLOTS
+   ════════════════════════════════════════════════════════════════════════════ */
+function drawGeometryPlots() {
+  const planes = [
+    { id: 'geo-grid1', label: 'Grid1', z: 0.000, type: 'mesh',     pitch: 1.238, color: '#3b82f6' },
+    { id: 'geo-wp1',   label: 'WP1',   z: 0.010, type: 'vertical', pitch: 2.500, color: '#64748b' },
+    { id: 'geo-wp2',   label: 'WP2',   z: 0.035, type: 'vertical', pitch: 2.500, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp3',   label: 'WP3',   z: 0.037, type: 'vertical', pitch: 2.500, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp4',   label: 'WP4',   z: 0.481, type: 'vertical', pitch: 2.500, color: '#64748b', tilt: '−45° to z' },
+    { id: 'geo-wp5',   label: 'WP5',   z: 0.483, type: 'vertical', pitch: 2.500, color: '#94a3b8', tilt: '−45° to z' },
+    { id: 'geo-wp6',   label: 'WP6',   z: 0.508, type: 'vertical', pitch: 2.500, color: '#64748b' },
+    { id: 'geo-grid2', label: 'Grid2', z: 0.520, type: 'mesh',     pitch: 0.803, color: '#8b5cf6' },
+  ];
+  for (const p of planes) drawOnePlane(p);
+}
+
+function drawOnePlane({ id, label, z, type, pitch, color, tilt }) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  const NS  = 'http://www.w3.org/2000/svg';
+  const apt = 25;   // aperture ±25 mm
+  const vb  = 32;   // viewBox half-extent (mm)
+
+  function mk(tag, attrs) {
+    const e = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+    return e;
+  }
+
+  const svg = mk('svg', {
+    viewBox: `${-vb} ${-vb} ${2*vb} ${2*vb}`,
+    width: '100%',
+    style: 'display:block;aspect-ratio:1',
+  });
+
+  // Background
+  svg.appendChild(mk('rect', { x: -vb, y: -vb, width: 2*vb, height: 2*vb, fill: '#0c1020' }));
+
+  // Clip path: square aperture
+  const clipId = id + '-clip';
+  const defs = mk('defs', {});
+  const cp = mk('clipPath', { id: clipId });
+  cp.appendChild(mk('rect', { x: -apt, y: -apt, width: 2*apt, height: 2*apt }));
+  defs.appendChild(cp);
+  svg.appendChild(defs);
+
+  // Wire group: scale(1,-1) so physics +y points up on screen
+  const g = mk('g', { 'clip-path': `url(#${clipId})`, transform: 'scale(1,-1)' });
+
+  const sw  = type === 'mesh' ? '0.22' : '0.40';
+  const big = vb + 5;
+
+  function wire(x1, y1, x2, y2) {
+    g.appendChild(mk('line', { x1, y1, x2, y2, stroke: color, 'stroke-width': sw, opacity: '0.75' }));
+  }
+
+  if (type === 'mesh') {
+    const k0 = Math.floor(-apt / pitch), k1 = Math.ceil(apt / pitch);
+    for (let k = k0; k <= k1; k++) {
+      wire(k * pitch, -apt, k * pitch,  apt);  // vertical
+      wire(-apt, k * pitch,  apt, k * pitch);  // horizontal
+    }
+  } else if (type === 'vertical') {
+    const k0 = Math.floor(-apt / pitch), k1 = Math.ceil(apt / pitch);
+    for (let k = k0; k <= k1; k++) wire(k * pitch, -big, k * pitch, big);
+  }
+
+  svg.appendChild(g);
+
+  // Aperture outline (not clipped, drawn on top)
+  svg.appendChild(mk('rect', {
+    x: -apt, y: -apt, width: 2*apt, height: 2*apt,
+    fill: 'none', stroke: '#2563eb', 'stroke-width': '0.6',
+  }));
+
+  // Centre crosshair (dashed guide lines)
+  for (const [x1, y1, x2, y2] of [[-vb, 0, vb, 0], [0, -vb, 0, vb]]) {
+    svg.appendChild(mk('line', {
+      x1, y1, x2, y2,
+      stroke: '#1e2640', 'stroke-width': '0.3', 'stroke-dasharray': '1.5,1.5',
+    }));
+  }
+
+  // Text helper (in SVG coords, not the flipped group)
+  function txt(content, x, y, size, fill, anchor = 'middle') {
+    const t = mk('text', {
+      x, y, 'font-size': size, fill, 'text-anchor': anchor,
+      'font-family': "'Segoe UI', system-ui, sans-serif",
+    });
+    t.textContent = content;
+    svg.appendChild(t);
+  }
+
+  // Title and subtitle (above aperture, in the 7-unit margin between -32 and -25)
+  txt(label,                    0, -vb + 3.5, '4',   '#c7d2e8');
+  txt(`z = ${z.toFixed(3)} m`, 0, -vb + 6.5, '2.8', '#4a6fa5');
+
+  // Type + pitch label at bottom
+  const baseLabel = type === 'mesh'
+    ? `square mesh · p = ${pitch} mm`
+    : `vertical wires · p = ${pitch} mm`;
+  const typeLabel = tilt ? `${baseLabel} · plane ${tilt}` : baseLabel;
+  txt(typeLabel, 0, vb - 1.5, '2.5', '#4a6fa5');
+
+  el.appendChild(svg);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   INIT
+   ════════════════════════════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('lbl-N').textContent          = fmtInt(200000);
+  document.getElementById('lbl-D_source').textContent   = '50 cm';
+  document.getElementById('lbl-fwhm_xy').textContent    = '2.00 mm';
+  document.getElementById('lbl-fwhm_angle').textContent = '2.00 mrad';
+  document.getElementById('lbl-energy').textContent     = '1.00 MeV/u';
+  document.getElementById('lbl-eta_MCP').textContent    = '0.950';
+  document.getElementById('lbl-eta_IC').textContent     = '0.950';
+  document.getElementById('lbl-nbins').textContent      = '100';
+  document.getElementById('lbl-offset_amp').textContent = '0.50 mm';
+  document.getElementById('lbl-tof_fwhm').textContent   = '400 ps';
+
+  drawBeamline();
+  drawGeometryPlots();
+
+  document.querySelectorAll('input[type="number"], input[type="range"]')
+    .forEach(el => el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') runSim();
+    }));
+});
+</script>
+</body>
+</html>
