@@ -431,7 +431,7 @@
     <div id="geometry-card">
       <h4>Beamline Layout (not to scale) — MCP1: grid1+WP1-3 | MCP2: WP4-6+grid2 | IC</h4>
       <div class="beamline-svg-wrap">
-        <svg id="beamline-svg" width="960" height="80" xmlns="http://www.w3.org/2000/svg"
+        <svg id="beamline-svg" width="960" height="100" xmlns="http://www.w3.org/2000/svg"
              style="display:block; min-width:600px"></svg>
       </div>
     </div>
@@ -937,7 +937,7 @@ async function exportCSV() {
    ════════════════════════════════════════════════════════════════════════════ */
 function drawBeamline() {
   const svg = document.getElementById('beamline-svg');
-  const W = 960, H = 80, yc = H / 2, pad = 36;
+  const W = 960, H = 100, yc = H / 2, pad = 36;
   const drawW = W - 2 * pad;
 
   // All z values relative to beam entry; source at -0.5, IC at 0.620
@@ -962,6 +962,9 @@ function drawBeamline() {
     <defs>
       <marker id="arr" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
         <polygon points="0 0, 5 2.5, 0 5" fill="#1e2640"/>
+      </marker>
+      <marker id="ax-arr" markerWidth="4" markerHeight="4" refX="3" refY="2" orient="auto">
+        <polygon points="0 0, 4 2, 0 4" fill="#64748b"/>
       </marker>
     </defs>
     <line x1="${pad}" y1="${yc}" x2="${W - pad}" y2="${yc}"
@@ -1034,6 +1037,25 @@ function drawBeamline() {
     inner += `<line x1="${xi}" y1="${yc}" x2="${xi + 20}" y2="${yc}"
                     stroke="#1e2640" stroke-width="1" marker-end="url(#arr)"/>`;
   }
+
+  // ── Axis triad (bottom-left) ───────────────────────────────────────────────
+  // Side view: horizontal = z (beam), vertical = x (transverse), y = out of page
+  const ax = 22, ay = H - 8, aLen = 14, aCol = '#64748b';
+  // z axis → right
+  inner += `<line x1="${ax}" y1="${ay}" x2="${ax + aLen}" y2="${ay}"
+                  stroke="${aCol}" stroke-width="1.2" marker-end="url(#ax-arr)"/>
+            <text x="${ax + aLen + 4}" y="${ay + 3}" font-size="8" fill="${aCol}"
+                  font-family="monospace" font-style="italic">z</text>`;
+  // x axis ↑ up
+  inner += `<line x1="${ax}" y1="${ay}" x2="${ax}" y2="${ay - aLen}"
+                  stroke="${aCol}" stroke-width="1.2" marker-end="url(#ax-arr)"/>
+            <text x="${ax - 3}" y="${ay - aLen - 3}" font-size="8" fill="${aCol}"
+                  font-family="monospace" font-style="italic">x</text>`;
+  // y axis ⊙ out of page
+  inner += `<circle cx="${ax - 13}" cy="${ay}" r="4" fill="none" stroke="${aCol}" stroke-width="1"/>
+            <circle cx="${ax - 13}" cy="${ay}" r="1.5" fill="${aCol}"/>
+            <text x="${ax - 13}" y="${ay - 7}" text-anchor="middle" font-size="8" fill="${aCol}"
+                  font-family="monospace" font-style="italic">y</text>`;
 
   svg.innerHTML = inner;
 }
