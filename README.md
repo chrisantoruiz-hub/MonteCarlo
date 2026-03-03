@@ -71,21 +71,32 @@ Offsets affect both the aperture test and the wire-hit blocking coordinate (via 
 
 ---
 
+## Propagation rules
+
+A particle is removed from the **alive** mask (stops propagating) when it either:
+- exits the ±25 mm aperture at any element, or
+- hits a wire at **grid1 or WP1–WP6**.
+
+Grid2 wire hits do **not** kill the alive mask — they only prevent the particle from continuing to the IC.
+
+---
+
 ## Signals and counters
 
 | Counter | Definition |
 |---------|------------|
 | N_generated | All simulated particles |
-| N_pass_grid1 | Pass grid1 wire **and** aperture → **start signal** |
-| N_reach_grid2 | Reach z_grid2 without aperture loss → **stop signal** |
+| N_pass_grid1 | Alive at grid1, within aperture, **and** miss grid1 wires → **start signal** |
+| N_reach_grid2 | Survive all upstream aperture + wire-hit losses and reach z_grid2 aperture → **stop signal** |
 | N_tof_defined | start AND stop |
 | N_tof_recorded | tof_defined AND Bernoulli(η_MCP) |
-| N_pass_grid2 | reach_grid2 AND pass grid2 wire check |
+| N_pass_grid2 | reach_grid2 AND pass grid2 wire mesh |
 | N_reach_IC_geometric | pass_grid2 AND within IC aperture |
 | N_detected_IC | reach_IC AND Bernoulli(η_IC) |
 | **N_coin_TOF_IC** | **tof_recorded AND IC_detected** — primary measured sample |
+| N_wire_hit_X | Events alive at plane X that struck a wire (X = grid1, WP1–WP6, grid2) |
 
-**Propagation rule**: both aperture losses (|x| or |y| > 25 mm) and wire hits remove a particle from the alive mask at grid1 and WP1–WP6. The **stop signal** fires for any particle that reaches z_grid2 within aperture, regardless of the grid2 wire hit. Grid2 wire hits only prevent the particle from continuing to the IC. TOF = (START ∧ STOP) × η_MCP.
+**Stop signal rule**: TOF = (START ∧ STOP) × η_MCP. The stop signal fires whenever a particle reaches z_grid2 within aperture — the grid2 wire hit is irrelevant to TOF generation.
 
 ---
 
