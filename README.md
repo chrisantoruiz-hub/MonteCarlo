@@ -1,6 +1,6 @@
-# Monte Carlo Beamline Simulator v2
+# MCP and IC Efficiency Simulator
 
-Browser-based Monte Carlo simulator for particle trajectories through a two-MCP beamline with grids, tilted wire planes, and an ionisation chamber. FastAPI backend + vanilla JS + Plotly.js frontend.
+Browser-based Monte Carlo simulator for particle trajectories through a two-MCP beamline with grids, tilted wire planes, and an ionisation chamber. Determines MCP and IC efficiencies from coincidence spectra. FastAPI backend + vanilla JS + Plotly.js + MathJax frontend.
 
 ---
 
