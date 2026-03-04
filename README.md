@@ -37,7 +37,7 @@ All z positions are relative to grid1. Aperture is **5 × 5 cm** (±25 mm) at ev
 | WP4     | 0.481             | Plane **tilted −45° to z-axis** (in x-z plane); wires along y (u = x_local); first in beam order |
 | WP5     | 0.483             | Plane **tilted −45° to z-axis**; wires along y; parallel to WP4, 2 mm downstream |
 | WP6     | 0.508             | Plane **⊥ to beam**; wires along y (vertical; blocking coord u = x_local) |
-| grid2   | 0.520 – 0.520043  | MN8 square mesh: pitch 803 µm, t = 43 µm (x- and y-wires); z-extent = wire thickness |
+| grid2   | 0.520 – variable  | Square mesh; type selectable (see below); x- and y-wires; z-extent = wire thickness |
 
 ### Downstream
 
@@ -51,13 +51,24 @@ All z positions are relative to grid1. Aperture is **5 × 5 cm** (±25 mm) at ev
 - All wires run along **y** (vertical; blocking coord u = x_local). The ±45° refers to the tilt of the **physical plane** relative to the beam axis, not the wire orientation.
 - For the wire-hit check, the nominal-z approximation is used: the x-dependent shift in crossing-z due to the plane tilt (Δz ≈ ±x_local) produces Δx = tx·Δz ≪ wire pitch for typical angles (tx ~ 2 mrad), so the correction is negligible.
 
+### Grid2 selectable mesh types
+
+| Name | Pitch (µm) | Wire thickness (µm) | T_analytic |
+|------|-----------|---------------------|------------|
+| MN4  | 1238      | 32                  | 0.94897    |
+| MN8  | 803       | 43                  | **0.89577** (default) |
+| MN9  | 785       | 61                  | 0.85449    |
+| MN14 | 440       | 68                  | 0.71735    |
+
+T_analytic = ((p − t) / p)². The active type is selected in the Efficiencies sidebar; the geometry diagram and analytic-T display update immediately, and the selected pitch/thickness are forwarded to the simulation.
+
 ### Analytic transmission values
 
 | Element | Formula | T |
 |---------|---------|---|
 | grid1 (MN4 square mesh) | ((p − t) / p)² | **0.94897** |
 | wire plane (single, 1-D) | (p − t) / p | **0.98000** |
-| grid2 (MN8 square mesh) | ((p − t) / p)² | **0.89577** |
+| grid2 (type-dependent)   | ((p − t) / p)² | see table above |
 
 These are displayed in the Efficiencies sidebar without requiring a simulation run.
 
@@ -129,13 +140,30 @@ All rates are relative to N_generated:
 
 **Recovered IC efficiency**: fraction of TOF events expected to reach the IC (after grid2 analytic transmission T_grid2) that were actually detected. Estimates η_IC × wire-plane transmission product as seen from the TOF side.
 
+The derivation of these efficiency estimators — including counting equations, cancellation of upstream transmissions, and Poisson uncertainties — is reproduced in the **Background Info** tab of the frontend.
+
+---
+
+## Frontend tabs
+
+### Simulation tab
+Contains the full interactive simulation interface: parameter sidebar, run button, histograms, 2-D scatter / heatmap, derived-quantities panel, per-plane offset table, and geometry diagrams.
+
+### Background Info tab
+Renders a derivation document (via MathJax) covering:
+- Counting equations for N_MCP, N_IC, and N_MCP∩IC
+- Cancellation of upstream transmissions
+- Extraction formulas for η_MCP and η_IC from coincidence ratios
+- Numerical example
+- Poisson uncertainty propagation for both efficiencies
+
 ---
 
 ## API
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | /config | Default SimParams + geometry JSON |
+| GET | /config | Default SimParams + geometry JSON (lists all grid2 types) |
 | POST | /simulate | Run MC → histograms, stats, scatter, heatmap, plane offsets |
 | POST | /export | Stream event-level CSV (≤ 50 k rows) |
 
@@ -151,7 +179,7 @@ backend/
   requirements.txt
 
 frontend/
-  index.html      Single-page app (Plotly.js, vanilla JS)
+  index.html      Single-page app (Plotly.js, MathJax, vanilla JS)
 
 tests/
   test_sim.py     Unit tests for simulation invariants
