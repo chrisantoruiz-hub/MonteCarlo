@@ -212,6 +212,8 @@ def run_simulation(
     offset_amp_m: float = 0.0005,      # 0.5 mm default
     offsets: Optional[np.ndarray] = None,  # shape (N_PLANES, 2), overrides amp+seed
     tof_fwhm_ps: float = 400.0,        # TOF timing resolution FWHM in picoseconds
+    grid2_pitch: float = GRID2_PITCH,  # override for different grid2 mesh types
+    grid2_thick: float = GRID2_THICK,
 ) -> Tuple[Dict, Dict, Dict, Dict, np.ndarray]:
     """
     Generate N particles and propagate them through the beamline.
@@ -344,8 +346,8 @@ def run_simulation(
     reach_g2     = alive & ap_g2
     stop_signal  = reach_g2.copy()     # stop fires on reaching grid2, wire-hit independent
 
-    hit_g2    = (wire_hit(xl_g2, GRID2_PITCH, GRID2_THICK * 0.5) |
-                 wire_hit(yl_g2, GRID2_PITCH, GRID2_THICK * 0.5))
+    hit_g2    = (wire_hit(xl_g2, grid2_pitch, grid2_thick * 0.5) |
+                 wire_hit(yl_g2, grid2_pitch, grid2_thick * 0.5))
     n_wire_g2 = int((reach_g2 & hit_g2).sum())
     pass_g2   = reach_g2 & ~hit_g2    # only mesh-passers continue to IC
 
@@ -444,7 +446,7 @@ def run_simulation(
         gamma              = gamma,
         grid1_analytic_T   = analytic_T(GRID1_PITCH, GRID1_THICK, axes=2),
         wp_analytic_T_per_plane = analytic_T(WP_PITCH, WP_THICK, axes=1),
-        grid2_analytic_T   = analytic_T(GRID2_PITCH, GRID2_THICK, axes=2),
+        grid2_analytic_T   = analytic_T(grid2_pitch, grid2_thick, axes=2),
         elapsed_s          = elapsed,
     )
 

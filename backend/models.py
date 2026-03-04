@@ -81,6 +81,16 @@ class SimParams(BaseModel):
         description="Gaussian timing resolution of TOF_MCP (FWHM in ps; 0 = ideal)",
     )
 
+    # Grid2 mesh type (selectable)
+    grid2_pitch_um: float = Field(
+        default=803.0, ge=100.0, le=5000.0,
+        description="Grid2 mesh pitch (µm); default = MN8",
+    )
+    grid2_thick_um: float = Field(
+        default=43.0, ge=1.0, le=200.0,
+        description="Grid2 wire thickness (µm); default = MN8",
+    )
+
     # Optional / advanced
     seed: Optional[int] = Field(
         default=None,

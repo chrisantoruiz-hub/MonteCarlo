@@ -236,6 +236,22 @@
     .analytic-t-row:last-child { margin-bottom: 0; }
     .analytic-t-row .at-label { font-size: .72rem; color: #6b7a99; }
     .analytic-t-row .at-val   { font-size: .78rem; font-weight: 600; color: #93c5fd; font-family: 'Courier New', monospace; }
+
+    /* Grid2 type selector */
+    .grid2-selector { margin-top: 10px; }
+    .grid2-selector-label {
+      font-size: .65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .07em; color: #4a6fa5; margin-bottom: 6px;
+    }
+    .grid2-btn-group { display: flex; gap: 4px; flex-wrap: wrap; }
+    .grid2-btn {
+      flex: 1; min-width: 40px; padding: 4px 6px;
+      background: #0c1020; border: 1px solid #1e2640; border-radius: 4px;
+      color: #6b7a99; font-size: .72rem; font-family: 'Courier New', monospace;
+      cursor: pointer; text-align: center; transition: all .15s;
+    }
+    .grid2-btn:hover { border-color: #2563eb; color: #93c5fd; }
+    .grid2-btn.active { background: #1e3a5a; border-color: #3b82f6; color: #93c5fd; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -339,6 +355,15 @@
         <input type="range" id="sl-tof_fwhm" min="0" max="2000" step="10" value="400"
                oninput="syncSlider('tof_fwhm', this.value, v => v+' ps')">
       </div>
+      <div class="grid2-selector">
+        <div class="grid2-selector-label">Grid2 type</div>
+        <div class="grid2-btn-group">
+          <button class="grid2-btn" data-name="MN4"  data-pitch="1238" data-thick="32"  onclick="selectGrid2(this)">MN4</button>
+          <button class="grid2-btn active" data-name="MN8"  data-pitch="803"  data-thick="43"  onclick="selectGrid2(this)">MN8</button>
+          <button class="grid2-btn" data-name="MN9"  data-pitch="785"  data-thick="61"  onclick="selectGrid2(this)">MN9</button>
+          <button class="grid2-btn" data-name="MN14" data-pitch="440"  data-thick="68"  onclick="selectGrid2(this)">MN14</button>
+        </div>
+      </div>
       <div class="analytic-t-block">
         <div class="analytic-t-title">Analytic Transmission (T)</div>
         <div class="analytic-t-row">
@@ -350,7 +375,7 @@
           <span class="at-val" id="at-wp">—</span>
         </div>
         <div class="analytic-t-row">
-          <span class="at-label">grid2 — MN8 mesh</span>
+          <span class="at-label" id="at-grid2-label">grid2 — MN8 mesh</span>
           <span class="at-val" id="at-grid2">—</span>
         </div>
       </div>
@@ -533,6 +558,20 @@ function syncSlider(key, value, formatter) {
 /* ════════════════════════════════════════════════════════════════════════════
    PARAMETER COLLECTION
    ════════════════════════════════════════════════════════════════════════════ */
+// Grid2 selection state
+let _grid2PitchUm = 803, _grid2ThickUm = 43;
+
+function selectGrid2(btn) {
+  document.querySelectorAll('.grid2-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _grid2PitchUm = parseInt(btn.dataset.pitch);
+  _grid2ThickUm = parseInt(btn.dataset.thick);
+  const name = btn.dataset.name;
+  document.getElementById('at-grid2-label').textContent = `grid2 — ${name} mesh`;
+  const T = Math.pow((_grid2PitchUm - _grid2ThickUm) / _grid2PitchUm, 2);
+  document.getElementById('at-grid2').textContent = T.toFixed(5);
+}
+
 function getParams() {
   const seedRaw   = document.getElementById('inp-seed').value.trim();
   const offSeedRaw = document.getElementById('inp-offset-seed').value.trim();
@@ -553,6 +592,8 @@ function getParams() {
     seed:             seedRaw === '' ? null : parseInt(seedRaw),
     relativistic:     document.getElementById('chk-relativistic').checked,
     fill_ic_detected: document.getElementById('chk-ic-det').checked,
+    grid2_pitch_um:   _grid2PitchUm,
+    grid2_thick_um:   _grid2ThickUm,
   };
 }
 
@@ -1200,16 +1241,15 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('lbl-offset_amp').textContent = '0.50 mm';
   document.getElementById('lbl-tof_fwhm').textContent   = '400 ps';
 
-  // Analytic transmission — geometry constants matching backend sim.py
+  // Analytic transmission — grid1 and WP are fixed; grid2 updates with selector
   (function() {
     function analyticT(pitch, thick, axes) {
       return Math.pow((pitch - thick) / pitch, axes);
     }
-    const T_grid1 = analyticT(1238e-6, 32e-6, 2);
-    const T_wp    = analyticT(1000e-6, 20e-6, 1);
-    const T_grid2 = analyticT( 803e-6, 43e-6, 2);
-    document.getElementById('at-grid1').textContent = T_grid1.toFixed(5);
-    document.getElementById('at-wp').textContent    = T_wp.toFixed(5);
+    document.getElementById('at-grid1').textContent = analyticT(1238e-6, 32e-6, 2).toFixed(5);
+    document.getElementById('at-wp').textContent    = analyticT(1000e-6, 20e-6, 1).toFixed(5);
+    // grid2 initialised from default MN8 state (_grid2PitchUm / _grid2ThickUm)
+    const T_grid2 = Math.pow((_grid2PitchUm - _grid2ThickUm) / _grid2PitchUm, 2);
     document.getElementById('at-grid2').textContent = T_grid2.toFixed(5);
   })();
 

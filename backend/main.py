@@ -95,14 +95,16 @@ def get_config() -> DefaultConfig:
                 "WP5": {"z_m": Z_GRID2 - 0.037, "orientation": "wires along y (u = x_local); plane tilted −45° to z-axis", "note": "2.5 cm upstream of WP6"},
                 "WP6": {"z_m": Z_GRID2 - 0.012, "orientation": "wires along y (vertical; u = x_local); plane ⊥ z-axis"},
                 "grid2": {
-                    "z_m":        Z_GRID2,
-                    "z_extent_m": (Z_GRID2, round(Z_GRID2 + GRID2_THICK, 9)),
-                    "type":       "MN8 (square mesh)",
-                    "pitch_um":   round(GRID2_PITCH * 1e6, 1),
-                    "thick_um":   round(GRID2_THICK * 1e6, 1),
-                    "note":       "z-extent equals wire thickness",
-                    "T_analytic": round(analytic_T(GRID2_PITCH, GRID2_THICK, axes=2), 5),
-                    "wires":      "x and y",
+                    "z_m":          Z_GRID2,
+                    "note":         "z-extent equals wire thickness; type selectable",
+                    "wires":        "x and y",
+                    "available_types": [
+                        {"name": "MN4",  "pitch_um": 1238, "thick_um": 32, "T_analytic": round(analytic_T(1238e-6, 32e-6, axes=2), 5)},
+                        {"name": "MN8",  "pitch_um":  803, "thick_um": 43, "T_analytic": round(analytic_T( 803e-6, 43e-6, axes=2), 5)},
+                        {"name": "MN9",  "pitch_um":  785, "thick_um": 61, "T_analytic": round(analytic_T( 785e-6, 61e-6, axes=2), 5)},
+                        {"name": "MN14", "pitch_um":  440, "thick_um": 68, "T_analytic": round(analytic_T( 440e-6, 68e-6, axes=2), 5)},
+                    ],
+                    "default": "MN8",
                 },
             },
             "ic_plane": {
@@ -149,6 +151,8 @@ def simulate(params: SimParams) -> SimResult:
             offset_amp_m     = params.offset_amp_mm * 1e-3,
             offsets          = None,
             tof_fwhm_ps      = params.tof_fwhm_ps,
+            grid2_pitch      = params.grid2_pitch_um * 1e-6,
+            grid2_thick      = params.grid2_thick_um * 1e-6,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -202,6 +206,8 @@ def export(req: ExportRequest) -> StreamingResponse:
             fill_ic_detected = sp.fill_ic_detected,
             offset_amp_m     = sp.offset_amp_mm * 1e-3,
             tof_fwhm_ps      = sp.tof_fwhm_ps,
+            grid2_pitch      = sp.grid2_pitch_um * 1e-6,
+            grid2_thick      = sp.grid2_thick_um * 1e-6,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
