@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Monte Carlo Beamline Simulator v2</title>
   <script src="https://cdn.plot.ly/plotly-2.34.0.min.js"></script>
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' },
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 14px; }
@@ -252,6 +259,41 @@
     }
     .grid2-btn:hover { border-color: #2563eb; color: #93c5fd; }
     .grid2-btn.active { background: #1e3a5a; border-color: #3b82f6; color: #93c5fd; font-weight: 700; }
+
+    /* Tab bar */
+    .tab-bar {
+      display: flex; gap: 0; border-bottom: 2px solid #1e2640;
+      flex-shrink: 0; margin-bottom: 2px;
+    }
+    .tab-btn {
+      background: none; border: none; border-bottom: 3px solid transparent;
+      margin-bottom: -2px; color: #6b7a99; font-size: .88rem; font-weight: 500;
+      padding: 9px 22px; cursor: pointer; transition: color .15s, border-color .15s;
+      font-family: inherit; letter-spacing: .01em;
+    }
+    .tab-btn:hover { color: #c7d2e8; }
+    .tab-btn.active { color: #93c5fd; border-bottom-color: #2563eb; }
+
+    /* Background Info document */
+    .bg-doc {
+      max-width: 800px; padding: 4px 0 48px; line-height: 1.9; color: #c7d2e8;
+    }
+    .bg-title {
+      font-size: 1.08rem; font-weight: 700; color: #e2e8f0;
+      margin: 10px 0 22px; padding-bottom: 12px; border-bottom: 2px solid #1e2640;
+    }
+    .bg-section {
+      font-size: .88rem; font-weight: 700; color: #93c5fd; text-transform: uppercase;
+      letter-spacing: .06em; margin: 30px 0 10px; padding-bottom: 5px;
+      border-bottom: 1px solid #1e2640;
+    }
+    .bg-subsection {
+      font-size: .82rem; font-weight: 600; color: #8fa3c8; margin: 18px 0 8px;
+    }
+    .bg-doc p  { margin-bottom: 10px; font-size: .875rem; }
+    .bg-doc ol { margin: 8px 0 14px 26px; font-size: .875rem; }
+    .bg-doc li { margin-bottom: 5px; }
+    #bg-tab mjx-container[display="true"] { margin: 14px auto; }
   </style>
 </head>
 <body>
@@ -453,6 +495,13 @@
   <!-- Main content -->
   <main id="main">
 
+    <nav class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('sim', this)">Simulation</button>
+      <button class="tab-btn" onclick="switchTab('bg', this)">Background Info</button>
+    </nav>
+
+    <div id="sim-tab" style="display:contents">
+
     <div id="geometry-card">
       <h4>Beamline Layout (not to scale) — MCP1: grid1+WP1-3 | MCP2: WP4-6+grid2 | IC</h4>
       <div class="beamline-svg-wrap">
@@ -532,6 +581,84 @@
       <div class="geo-card" id="geo-grid2"></div>
     </div>
 
+    </div><!-- /sim-tab -->
+
+    <div id="bg-tab" style="display:none">
+      <div class="bg-doc">
+        <h2 class="bg-title">Determination of MCP and IC Efficiencies from Coincidence Spectra</h2>
+
+        <h3 class="bg-section">1. Experimental Geometry</h3>
+        <p>Particles enter the system with total number \(N_{\text{tot}}\) and traverse:</p>
+        <ol>
+          <li>Grid 1 with transmission \(\tau_{\text{grid1}}\)</li>
+          <li>MCP1 wire planes with transmission \(\tau_{\text{wires1}}\)</li>
+          <li>MCP2 wire planes with transmission \(\tau_{\text{wires2}}\)</li>
+          <li>Grid 2 with transmission \(\tau_{\text{grid2}}\)</li>
+        </ol>
+        <p>The MCP detector efficiencies are \(\eta_{\text{MCP1}},\quad \eta_{\text{MCP2}}\) and we define the combined MCP coincidence efficiency:</p>
+        \[\eta_{\text{MCP}} = \eta_{\text{MCP1}}\eta_{\text{MCP2}}.\]
+        <p>The ion chamber efficiency is \(\eta_{\text{IC}}\).</p>
+
+        <h3 class="bg-section">2. Counting Equations</h3>
+
+        <h4 class="bg-subsection">MCP Coincidence Spectrum</h4>
+        \[N_{\text{MCP}} = N_{\text{tot}}\;\tau_{\text{grid1}}\;\tau_{\text{wires1}}\;\tau_{\text{wires2}}\;\eta_{\text{MCP}}\]
+
+        <h4 class="bg-subsection">IC Spectrum</h4>
+        \[N_{\text{IC}} = N_{\text{tot}}\;\tau_{\text{grid1}}\;\tau_{\text{wires1}}\;\tau_{\text{wires2}}\;\tau_{\text{grid2}}\;\eta_{\text{IC}}\]
+
+        <h4 class="bg-subsection">Overlap Spectrum (MCP &cap; IC)</h4>
+        \[N_{\text{MCP}\cap\text{IC}} = N_{\text{tot}}\;\tau_{\text{grid1}}\;\tau_{\text{wires1}}\;\tau_{\text{wires2}}\;\tau_{\text{grid2}}\;\eta_{\text{MCP}}\;\eta_{\text{IC}}\]
+
+        <h3 class="bg-section">3. Extraction of Efficiencies</h3>
+        \[\boxed{\eta_{\text{MCP}} = \frac{N_{\text{MCP}\cap\text{IC}}}{N_{\text{IC}}}}\]
+        \[\boxed{\eta_{\text{IC}} = \frac{N_{\text{MCP}\cap\text{IC}}}{N_{\text{MCP}}\,\tau_{\text{grid2}}}}\]
+        <p>All upstream transmission factors and \(N_{\text{tot}}\) cancel.</p>
+
+        <h3 class="bg-section">4. Numerical Example</h3>
+        <p>Assume:</p>
+        \[N_{\text{tot}} = 100,\quad \tau_{\text{grid1}} = 0.95,\quad \tau_{\text{grid2}} = 0.90\]
+        \[\tau_{\text{wires1}} = \tau_{\text{wires2}} = 0.98^3 = 0.941192\]
+        \[\eta_{\text{MCP}} = 0.95,\quad \eta_{\text{IC}} = 0.95\]
+
+        <h4 class="bg-subsection">Intermediate Transmission</h4>
+        \[\tau_{\text{up}} = 0.95 \times (0.941192)^2 = 0.84155\]
+        \[\tau_{\text{full}} = 0.84155 \times 0.90 = 0.75740\]
+
+        <h4 class="bg-subsection">Counts</h4>
+        \[N_{\text{MCP}} = 100 \times 0.84155 \times 0.95 = 79.95\]
+        \[N_{\text{IC}} = 100 \times 0.75740 \times 0.95 = 71.95\]
+        \[N_{\text{MCP}\cap\text{IC}} = 100 \times 0.75740 \times 0.95^2 = 68.38\]
+        <p>Efficiencies are recovered:</p>
+        \[\eta_{\text{MCP}} = \frac{68.38}{71.95} = 0.95\]
+        \[\eta_{\text{IC}} = \frac{68.38}{79.95 \times 0.90} = 0.95\]
+
+        <h3 class="bg-section">5. Poisson Counting Statistics</h3>
+        <p>Assume each measured count follows Poisson statistics: \(\sigma_N = \sqrt{N}\). Thus,</p>
+        \[\sigma_{N_{\text{MCP}}} = \sqrt{N_{\text{MCP}}},\quad \sigma_{N_{\text{IC}}} = \sqrt{N_{\text{IC}}},\quad \sigma_{N_{\text{MCP}\cap\text{IC}}} = \sqrt{N_{\text{MCP}\cap\text{IC}}}\]
+
+        <h4 class="bg-subsection">Uncertainty on \(\eta_{\text{MCP}}\)</h4>
+        <p>Since \(\eta_{\text{MCP}} = N_{\text{MCP}\cap\text{IC}} / N_{\text{IC}}\), error propagation gives</p>
+        \[\left( \frac{\sigma_{\eta_{\text{MCP}}}}{\eta_{\text{MCP}}} \right)^2 = \frac{1}{N_{\text{MCP}\cap\text{IC}}} + \frac{1}{N_{\text{IC}}}.\]
+        <p>Thus</p>
+        \[\sigma_{\eta_{\text{MCP}}} = \eta_{\text{MCP}}\sqrt{\frac{1}{N_{\text{MCP}\cap\text{IC}}} + \frac{1}{N_{\text{IC}}}}.\]
+
+        <h4 class="bg-subsection">Uncertainty on \(\eta_{\text{IC}}\)</h4>
+        <p>Since \(\tau_{\text{grid2}}\) is constant,</p>
+        \[\left( \frac{\sigma_{\eta_{\text{IC}}}}{\eta_{\text{IC}}} \right)^2 = \frac{1}{N_{\text{MCP}\cap\text{IC}}} + \frac{1}{N_{\text{MCP}}}.\]
+        <p>Therefore,</p>
+        \[\sigma_{\eta_{\text{IC}}} = \eta_{\text{IC}}\sqrt{\frac{1}{N_{\text{MCP}\cap\text{IC}}} + \frac{1}{N_{\text{MCP}}}}.\]
+
+        <h3 class="bg-section">6. Numerical Statistical Uncertainties</h3>
+        <p>Using the example counts \(N_{\text{MCP}} = 79.95\), \(N_{\text{IC}} = 71.95\), \(N_{\text{MCP}\cap\text{IC}} = 68.38\):</p>
+        \[\sigma_{\eta_{\text{MCP}}} = 0.95\sqrt{\frac{1}{68.38} + \frac{1}{71.95}} = 0.16\]
+        \[\sigma_{\eta_{\text{IC}}} = 0.95\sqrt{\frac{1}{68.38} + \frac{1}{79.95}} = 0.15\]
+
+        <h3 class="bg-section">Conclusion</h3>
+        <p>Detector efficiencies can be extracted purely from coincidence ratios. Under Poisson statistics, the fractional uncertainty is determined by the inverse square roots of the measured counts.</p>
+      </div>
+    </div><!-- /bg-tab -->
+
   </main>
 
 </div><!-- /app -->
@@ -577,6 +704,14 @@ function selectGrid2(btn) {
     drawOnePlane({ id: 'geo-grid2', label: `Grid2 · ${_grid2Name}`, z: 0.520,
                    type: 'mesh', pitch: _grid2PitchUm / 1000, color: '#8b5cf6' });
   }
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sim-tab').style.display = tab === 'sim' ? 'contents' : 'none';
+  document.getElementById('bg-tab').style.display  = tab === 'bg'  ? 'block'    : 'none';
+  if (tab === 'bg' && window.MathJax) MathJax.typesetPromise();
 }
 
 function getParams() {
