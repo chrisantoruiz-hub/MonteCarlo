@@ -559,17 +559,24 @@ function syncSlider(key, value, formatter) {
    PARAMETER COLLECTION
    ════════════════════════════════════════════════════════════════════════════ */
 // Grid2 selection state
-let _grid2PitchUm = 803, _grid2ThickUm = 43;
+let _grid2PitchUm = 803, _grid2ThickUm = 43, _grid2Name = 'MN8';
 
 function selectGrid2(btn) {
   document.querySelectorAll('.grid2-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   _grid2PitchUm = parseInt(btn.dataset.pitch);
   _grid2ThickUm = parseInt(btn.dataset.thick);
-  const name = btn.dataset.name;
-  document.getElementById('at-grid2-label').textContent = `grid2 — ${name} mesh`;
+  _grid2Name    = btn.dataset.name;
+  document.getElementById('at-grid2-label').textContent = `grid2 — ${_grid2Name} mesh`;
   const T = Math.pow((_grid2PitchUm - _grid2ThickUm) / _grid2PitchUm, 2);
   document.getElementById('at-grid2').textContent = T.toFixed(5);
+  // Redraw the grid2 geometry diagram
+  const geoEl = document.getElementById('geo-grid2');
+  if (geoEl) {
+    geoEl.innerHTML = '';
+    drawOnePlane({ id: 'geo-grid2', label: `Grid2 · ${_grid2Name}`, z: 0.520,
+                   type: 'mesh', pitch: _grid2PitchUm / 1000, color: '#8b5cf6' });
+  }
 }
 
 function getParams() {
@@ -1123,7 +1130,7 @@ function drawGeometryPlots() {
     { id: 'geo-wp4',   label: 'WP4',   z: 0.481, type: 'vertical', pitch: 1.000, color: '#64748b', tilt: '−45° to z' },
     { id: 'geo-wp5',   label: 'WP5',   z: 0.483, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '−45° to z' },
     { id: 'geo-wp6',   label: 'WP6',   z: 0.508, type: 'vertical', pitch: 1.000, color: '#64748b' },
-    { id: 'geo-grid2', label: 'Grid2', z: 0.520, type: 'mesh',     pitch: 0.803, color: '#8b5cf6' },
+    { id: 'geo-grid2', label: `Grid2 · ${_grid2Name}`, z: 0.520, type: 'mesh', pitch: _grid2PitchUm / 1000, color: '#8b5cf6' },
   ];
   for (const p of planes) drawOnePlane(p);
 }
