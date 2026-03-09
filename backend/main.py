@@ -7,6 +7,10 @@ GET  /config      → default SimParams + geometry description
 POST /simulate    → run simulation, return histogram data + summary stats
 POST /export      → return CSV of event-level data (capped at 50 k events)
 
+Frontend
+────────
+Serves the static frontend from ../frontend at the root URL (/).
+
 Start with:
     uvicorn main:app --reload --port 8000
 """
@@ -14,15 +18,21 @@ Start with:
 from __future__ import annotations
 
 import io
-import sys
 import os
-
-sys.path.insert(0, os.path.dirname(__file__))
+import sys
+from pathlib import Path
 
 import numpy as np
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
+
+BASE_DIR = Path(__file__).resolve().parent
+FRONTEND_DIR = BASE_DIR.parent / "frontend"
+
+# Ensure local imports work when running as a script
+sys.path.insert(0, os.path.dirname(__file__))
 
 from models import (
     DefaultConfig,
@@ -37,15 +47,18 @@ from models import (
 )
 from sim import (
     APERTURE_HALF,
-    GRID1_PITCH, GRID1_THICK,
-    GRID2_PITCH, GRID2_THICK,
-    WP_PITCH, WP_THICK,
-    Z_GRID1, Z_GRID2, Z_IC,
-    PLANE_NAMES, PLANE_Z,
+    GRID1_PITCH,
+    GRID1_THICK,
+    GRID2_PITCH,
+    GRID2_THICK,
+    WP_PITCH,
+    WP_THICK,
+    Z_GRID1,
+    Z_GRID2,
+    Z_IC,
+    PLANE_NAMES,
+    PLANE_Z,
     analytic_T,
-    compute_kinematics,
-    fwhm_to_sigma,
-    generate_offsets,
     run_simulation,
 )
 
@@ -77,38 +90,80 @@ def get_config() -> DefaultConfig:
             "aperture_cm": APERTURE_HALF * 200,
             "MCP1": {
                 "grid1": {
-                    "z_m":        Z_GRID1,
+                    "z_m": Z_GRID1,
                     "z_extent_m": (Z_GRID1, round(Z_GRID1 + GRID1_THICK, 9)),
-                    "type":       "MN4 (square mesh)",
-                    "pitch_um":   round(GRID1_PITCH * 1e6, 1),
-                    "thick_um":   round(GRID1_THICK * 1e6, 1),
-                    "note":       "z-extent equals wire thickness",
+                    "type": "MN4 (square mesh)",
+                    "pitch_um": round(GRID1_PITCH * 1e6, 1),
+                    "thick_um": round(GRID1_THICK * 1e6, 1),
+                    "note": "z-extent equals wire thickness",
                     "T_analytic": round(analytic_T(GRID1_PITCH, GRID1_THICK, axes=2), 5),
-                    "wires":      "x and y",
+                    "wires": "x and y",
                 },
-                "WP1": {"z_m": 0.010, "orientation": "wires along y (vertical; u = x_local); plane ⊥ z-axis"},
-                "WP2": {"z_m": 0.035, "orientation": "wires along y (u = x_local); plane tilted +45° to z-axis", "note": "2.5 cm downstream of WP1; wire length √50 cm = 5√2 cm, 5 cm wide in x"},
-                "WP3": {"z_m": 0.037, "orientation": "wires along y (u = x_local); plane tilted +45° to z-axis", "note": "parallel to WP2; 2 mm downstream"},
+                "WP1": {
+                    "z_m": 0.010,
+                    "orientation": "wires along y (vertical; u = x_local); plane ⊥ z-axis",
+                },
+                "WP2": {
+                    "z_m": 0.035,
+                    "orientation": "wires along y (u = x_local); plane tilted +45° to z-axis",
+                    "note": "2.5 cm downstream of WP1; wire length √50 cm = 5√2 cm, 5 cm wide in x",
+                },
+                "WP3": {
+                    "z_m": 0.037,
+                    "orientation": "wires along y (u = x_local); plane tilted +45° to z-axis",
+                    "note": "parallel to WP2; 2 mm downstream",
+                },
             },
             "MCP2": {
-                "WP4": {"z_m": Z_GRID2 - 0.039, "orientation": "wires along y (u = x_local); plane tilted −45° to z-axis", "note": "first in beam order; parallel to WP5, 2 mm upstream; wire length √50 cm, 5 cm wide in x"},
-                "WP5": {"z_m": Z_GRID2 - 0.037, "orientation": "wires along y (u = x_local); plane tilted −45° to z-axis", "note": "2.5 cm upstream of WP6"},
-                "WP6": {"z_m": Z_GRID2 - 0.012, "orientation": "wires along y (vertical; u = x_local); plane ⊥ z-axis"},
+                "WP4": {
+                    "z_m": Z_GRID2 - 0.039,
+                    "orientation": "wires along y (u = x_local); plane tilted −45° to z-axis",
+                    "note": "first in beam order; parallel to WP5, 2 mm upstream; wire length √50 cm, 5 cm wide in x",
+                },
+                "WP5": {
+                    "z_m": Z_GRID2 - 0.037,
+                    "orientation": "wires along y (u = x_local); plane tilted −45° to z-axis",
+                    "note": "2.5 cm upstream of WP6",
+                },
+                "WP6": {
+                    "z_m": Z_GRID2 - 0.012,
+                    "orientation": "wires along y (vertical; u = x_local); plane ⊥ z-axis",
+                },
                 "grid2": {
-                    "z_m":          Z_GRID2,
-                    "note":         "z-extent equals wire thickness; type selectable",
-                    "wires":        "x and y",
+                    "z_m": Z_GRID2,
+                    "note": "z-extent equals wire thickness; type selectable",
+                    "wires": "x and y",
                     "available_types": [
-                        {"name": "MN4",  "pitch_um": 1238, "thick_um": 32, "T_analytic": round(analytic_T(1238e-6, 32e-6, axes=2), 5)},
-                        {"name": "MN8",  "pitch_um":  803, "thick_um": 43, "T_analytic": round(analytic_T( 803e-6, 43e-6, axes=2), 5)},
-                        {"name": "MN9",  "pitch_um":  785, "thick_um": 61, "T_analytic": round(analytic_T( 785e-6, 61e-6, axes=2), 5)},
-                        {"name": "MN14", "pitch_um":  440, "thick_um": 68, "T_analytic": round(analytic_T( 440e-6, 68e-6, axes=2), 5)},
+                        {
+                            "name": "MN4",
+                            "pitch_um": 1238,
+                            "thick_um": 32,
+                            "T_analytic": round(analytic_T(1238e-6, 32e-6, axes=2), 5),
+                        },
+                        {
+                            "name": "MN8",
+                            "pitch_um": 803,
+                            "thick_um": 43,
+                            "T_analytic": round(analytic_T(803e-6, 43e-6, axes=2), 5),
+                        },
+                        {
+                            "name": "MN9",
+                            "pitch_um": 785,
+                            "thick_um": 61,
+                            "T_analytic": round(analytic_T(785e-6, 61e-6, axes=2), 5),
+                        },
+                        {
+                            "name": "MN14",
+                            "pitch_um": 440,
+                            "thick_um": 68,
+                            "T_analytic": round(analytic_T(440e-6, 68e-6, axes=2), 5),
+                        },
                     ],
                     "default": "MN8",
                 },
             },
             "ic_plane": {
-                "z_m":  Z_IC,
+                "z_m": Z_IC,
                 "note": "10 cm downstream of grid2; same 5×5 cm aperture",
             },
             "wire_planes_common": {
@@ -135,49 +190,49 @@ def simulate(params: SimParams) -> SimResult:
     """Run Monte Carlo simulation and return histogram data plus summary stats."""
     try:
         hists_raw, stats_raw, scatter_raw, hist2d_raw, offsets = run_simulation(
-            N                = params.N,
-            D_source         = params.D_source,
-            fwhm_xy          = params.fwhm_xy,
-            fwhm_angle       = params.fwhm_angle,
-            energy_mev_per_u = params.energy_mev_per_u,
-            A                = params.A,
-            Z                = params.Z,
-            eta_MCP          = params.eta_MCP,
-            eta_IC           = params.eta_IC,
-            n_bins           = params.n_bins,
-            seed             = params.seed,
-            relativistic     = params.relativistic,
-            fill_ic_detected = params.fill_ic_detected,
-            offset_amp_m     = params.offset_amp_mm * 1e-3,
-            offsets          = None,
-            tof_fwhm_ps      = params.tof_fwhm_ps,
-            grid2_pitch      = params.grid2_pitch_um * 1e-6,
-            grid2_thick      = params.grid2_thick_um * 1e-6,
+            N=params.N,
+            D_source=params.D_source,
+            fwhm_xy=params.fwhm_xy,
+            fwhm_angle=params.fwhm_angle,
+            energy_mev_per_u=params.energy_mev_per_u,
+            A=params.A,
+            Z=params.Z,
+            eta_MCP=params.eta_MCP,
+            eta_IC=params.eta_IC,
+            n_bins=params.n_bins,
+            seed=params.seed,
+            relativistic=params.relativistic,
+            fill_ic_detected=params.fill_ic_detected,
+            offset_amp_m=params.offset_amp_mm * 1e-3,
+            offsets=None,
+            tof_fwhm_ps=params.tof_fwhm_ps,
+            grid2_pitch=params.grid2_pitch_um * 1e-6,
+            grid2_thick=params.grid2_thick_um * 1e-6,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     histograms = {k: HistogramData(**v) for k, v in hists_raw.items()}
-    stats      = SimStats(**stats_raw)
+    stats = SimStats(**stats_raw)
     scatter_ic = Scatter2D(**scatter_raw)
-    hist2d_ic  = Hist2D(**hist2d_raw)
+    hist2d_ic = Hist2D(**hist2d_raw)
 
     plane_offsets = [
         PlaneOffset(
-            name  = PLANE_NAMES[i],
-            z_m   = PLANE_Z[i],
-            dx_mm = round(float(offsets[i, 0]) * 1e3, 4),
-            dy_mm = round(float(offsets[i, 1]) * 1e3, 4),
+            name=PLANE_NAMES[i],
+            z_m=PLANE_Z[i],
+            dx_mm=round(float(offsets[i, 0]) * 1e3, 4),
+            dy_mm=round(float(offsets[i, 1]) * 1e3, 4),
         )
         for i in range(len(PLANE_NAMES))
     ]
 
     return SimResult(
-        histograms    = histograms,
-        stats         = stats,
-        scatter_ic    = scatter_ic,
-        hist2d_ic     = hist2d_ic,
-        plane_offsets = plane_offsets,
+        histograms=histograms,
+        stats=stats,
+        scatter_ic=scatter_ic,
+        hist2d_ic=hist2d_ic,
+        plane_offsets=plane_offsets,
     )
 
 
@@ -186,40 +241,41 @@ def simulate(params: SimParams) -> SimResult:
 @app.post("/export")
 def export(req: ExportRequest) -> StreamingResponse:
     """Return a CSV file with event-level data for up to 50 000 events."""
-    sp       = req.sim_params
+    sp = req.sim_params
     N_export = min(req.N_export, 50_000)
 
     try:
-        hists_raw, stats_raw, _scatter, _hist2d, _offsets = run_simulation(
-            N                = N_export,
-            D_source         = sp.D_source,
-            fwhm_xy          = sp.fwhm_xy,
-            fwhm_angle       = sp.fwhm_angle,
-            energy_mev_per_u = sp.energy_mev_per_u,
-            A                = sp.A,
-            Z                = sp.Z,
-            eta_MCP          = sp.eta_MCP,
-            eta_IC           = sp.eta_IC,
-            n_bins           = 10,
-            seed             = sp.seed,
-            relativistic     = sp.relativistic,
-            fill_ic_detected = sp.fill_ic_detected,
-            offset_amp_m     = sp.offset_amp_mm * 1e-3,
-            tof_fwhm_ps      = sp.tof_fwhm_ps,
-            grid2_pitch      = sp.grid2_pitch_um * 1e-6,
-            grid2_thick      = sp.grid2_thick_um * 1e-6,
+        run_simulation(
+            N=N_export,
+            D_source=sp.D_source,
+            fwhm_xy=sp.fwhm_xy,
+            fwhm_angle=sp.fwhm_angle,
+            energy_mev_per_u=sp.energy_mev_per_u,
+            A=sp.A,
+            Z=sp.Z,
+            eta_MCP=sp.eta_MCP,
+            eta_IC=sp.eta_IC,
+            n_bins=10,
+            seed=sp.seed,
+            relativistic=sp.relativistic,
+            fill_ic_detected=sp.fill_ic_detected,
+            offset_amp_m=sp.offset_amp_mm * 1e-3,
+            tof_fwhm_ps=sp.tof_fwhm_ps,
+            grid2_pitch=sp.grid2_pitch_um * 1e-6,
+            grid2_thick=sp.grid2_thick_um * 1e-6,
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     import sim as _sim
-    rng         = np.random.default_rng(sp.seed)
-    sigma_xy    = _sim.fwhm_to_sigma(sp.fwhm_xy)
-    sigma_angle = _sim.fwhm_to_sigma(sp.fwhm_angle)
-    z_source    = -sp.D_source
 
-    x0 = rng.normal(0.0, sigma_xy,    N_export)
-    y0 = rng.normal(0.0, sigma_xy,    N_export)
+    rng = np.random.default_rng(sp.seed)
+    sigma_xy = _sim.fwhm_to_sigma(sp.fwhm_xy)
+    sigma_angle = _sim.fwhm_to_sigma(sp.fwhm_angle)
+    z_source = -sp.D_source
+
+    x0 = rng.normal(0.0, sigma_xy, N_export)
+    y0 = rng.normal(0.0, sigma_xy, N_export)
     tx = rng.normal(0.0, sigma_angle, N_export)
     ty = rng.normal(0.0, sigma_angle, N_export)
 
@@ -228,8 +284,8 @@ def export(req: ExportRequest) -> StreamingResponse:
         return x0 + tx * dz, y0 + ty * dz
 
     xic, yic = pos_at(_sim.Z_IC)
-    v, _, _  = _sim.compute_kinematics(sp.A, sp.energy_mev_per_u, sp.relativistic)
-    tof_ns   = (_sim.Z_GRID2 - _sim.Z_GRID1) * np.sqrt(1 + tx**2 + ty**2) / v * 1e9
+    v, _, _ = _sim.compute_kinematics(sp.A, sp.energy_mev_per_u, sp.relativistic)
+    tof_ns = (_sim.Z_GRID2 - _sim.Z_GRID1) * np.sqrt(1 + tx**2 + ty**2) / v * 1e9
 
     buf = io.StringIO()
     buf.write("x0_mm,y0_mm,tx_mrad,ty_mrad,xIC_mm,yIC_mm,tof_ns\n")
@@ -247,6 +303,13 @@ def export(req: ExportRequest) -> StreamingResponse:
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=mc_export.csv"},
     )
+
+
+# ── Frontend static files ─────────────────────────────────────────────────────
+# Keep this LAST so it does not shadow API routes like /simulate, /export, /docs.
+
+if FRONTEND_DIR.exists():
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
 
 
 if __name__ == "__main__":

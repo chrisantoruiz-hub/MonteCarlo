@@ -467,7 +467,7 @@
       <h3>Backend</h3>
       <div class="ctrl-row">
         <label>API URL</label>
-        <input type="text" id="inp-api" value="http://localhost:8000"
+        <input type="text" id="inp-api" value=""
                style="width:160px;font-size:.72rem;background:#0c1020;border:1px solid #2a3560;color:#8fa3c8;border-radius:4px;padding:3px 5px;">
       </div>
     </div>
@@ -740,7 +740,8 @@ function getParams() {
 }
 
 function apiBase() {
-  return document.getElementById('inp-api').value.trim().replace(/\/$/, '');
+  const v = document.getElementById('inp-api').value.trim().replace(/\/$/, '');
+  return v || window.location.origin;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
