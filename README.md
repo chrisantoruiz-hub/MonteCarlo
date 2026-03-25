@@ -56,11 +56,13 @@ All z positions are relative to grid1. Aperture is **5 × 5 cm** (±25 mm) at ev
 | Name | Pitch (µm) | Wire thickness (µm) | T_analytic |
 |------|-----------|---------------------|------------|
 | MN4  | 1238      | 32                  | 0.94897    |
-| MN8  | 803       | 43                  | **0.89577** (default) |
+| MN8  | 803       | 43                  | **0.89577** (default, standard geometry) |
 | MN9  | 785       | 61                  | 0.85449    |
 | MN14 | 440       | 68                  | 0.71735    |
 
 T_analytic = ((p − t) / p)². The active type is selected in the Efficiencies sidebar; the geometry diagram and analytic-T display update immediately, and the selected pitch/thickness are forwarded to the simulation.
+
+In the **alternative geometry** the same selector applies to all four MCP2 planes (grid2 + WP6 + WP5 + WP4); default switches to MN4.
 
 ### Analytic transmission values
 
@@ -71,6 +73,42 @@ T_analytic = ((p − t) / p)². The active type is selected in the Efficiencies 
 | grid2 (type-dependent)   | ((p − t) / p)² | see table above |
 
 These are displayed in the Efficiencies sidebar without requiring a simulation run.
+
+---
+
+## Alternative geometry (MCP2 reversed)
+
+Toggled with the **Alt. Geometry** button in the header. MCP2 is reflected in z so that grid2 faces the beam first, followed by WP6, WP5, WP4 downstream.
+
+### MCP2 — alternative order (z = 0.520 – 0.559 m)
+
+| Element | z (m) | Description |
+|---------|-------|-------------|
+| grid2   | 0.520 | Square mesh; same selectable MN type applied to all MCP2 planes; **default MN4** |
+| WP6     | 0.532 | Square mesh (same type as grid2); plane ⊥ to beam |
+| WP5     | 0.557 | Square mesh; plane tilted **+45° to z-axis** (reflected from standard −45°) |
+| WP4     | 0.559 | Square mesh; plane tilted **+45° to z-axis**; parallel to WP5, 2 mm downstream |
+
+MCP1 (grid1 + WP1/WP2/WP3) is unchanged.
+
+### Counting equations (alternative geometry)
+
+```
+N_MCP     = N_tot · τ_grid1 · τ_wires1 · τ_grid2 · η_MCP
+N_IC      = N_tot · τ_grid1 · τ_wires1 · τ_grid2 · τ_wires2 · η_IC
+N_MCP∩IC  = N_tot · τ_grid1 · τ_wires1 · τ_grid2 · τ_wires2 · η_MCP · η_IC
+```
+
+where τ_wires2 = T_MN³ (three square mesh planes with the selected MN type).
+
+### Efficiency extraction (alternative geometry)
+
+```
+η_MCP = N_MCP∩IC / N_IC
+η_IC  = N_MCP∩IC / (N_MCP · τ_wires2)
+```
+
+All upstream factors (N_tot, τ_grid1, τ_wires1, τ_grid2) cancel in both ratios.
 
 ---
 
@@ -90,6 +128,8 @@ A particle is removed from the **alive** mask (stops propagating) when it either
 
 Grid2 wire hits do **not** kill the alive mask — they only prevent the particle from continuing to the IC.
 
+> **Alternative geometry**: grid2 wire hits **do** kill the alive mask (STOP requires passing the wire check), and WP6/WP5/WP4 wire hits kill the mask downstream of grid2.
+
 ---
 
 ## Signals and counters
@@ -107,7 +147,9 @@ Grid2 wire hits do **not** kill the alive mask — they only prevent the particl
 | **N_coin_TOF_IC** | **tof_recorded AND IC_detected** — primary measured sample |
 | N_wire_hit_X | Events alive at plane X that struck a wire (X = grid1, WP1–WP6, grid2) |
 
-**Stop signal rule**: TOF = (START ∧ STOP) × η_MCP. The stop signal fires whenever a particle reaches z_grid2 within aperture — the grid2 wire hit is irrelevant to TOF generation.
+**Stop signal rule (standard)**: The stop signal fires whenever a particle reaches z_grid2 within aperture — the grid2 wire hit is irrelevant to TOF generation.
+
+**Stop signal rule (alternative geometry)**: The stop signal fires only when a particle **passes through** grid2 wires (τ_grid2 enters the MCP counting equation).
 
 ---
 
@@ -127,6 +169,8 @@ A Gaussian timing resolution (default **400 ps FWHM**) is applied to recorded TO
 
 All rates are relative to N_generated:
 
+### Standard geometry
+
 | Rate | Formula |
 |------|---------|
 | TOF recorded fraction | N_tof_recorded / N_generated |
@@ -136,26 +180,40 @@ All rates are relative to N_generated:
 | **Recovered MCP efficiency** | N_coin_TOF_IC / N_detected_IC |
 | **Recovered IC efficiency** | N_coin_TOF_IC / (N_tof_recorded × T_grid2) |
 
-**Recovered MCP efficiency**: fraction of IC-detected events that also produced a TOF signal. Estimates the combined MCP + start-plane efficiency as seen from the IC side.
+### Alternative geometry
 
-**Recovered IC efficiency**: fraction of TOF events expected to reach the IC (after grid2 analytic transmission T_grid2) that were actually detected. Estimates η_IC × wire-plane transmission product as seen from the TOF side.
+| Rate | Formula |
+|------|---------|
+| TOF recorded fraction | N_tof_recorded / N_generated |
+| IC detected fraction | N_detected_IC / N_generated |
+| **Coincidence fraction** | **N_coin_TOF_IC / N_generated** |
+| Grid transmission | N_reach_IC_geometric / N_generated |
+| **Recovered MCP efficiency** | N_coin_TOF_IC / N_detected_IC |
+| **Recovered IC efficiency** | N_coin_TOF_IC / (N_tof_recorded × τ_wires2) |
 
-The derivation of these efficiency estimators — including counting equations, cancellation of upstream transmissions, and Poisson uncertainties — is reproduced in the **Background Info** tab of the frontend.
+where τ_wires2 = T_mesh³ (three MN mesh planes: WP6 + WP5 + WP4).
+
+**Recovered MCP efficiency**: same formula in both geometries — fraction of IC-detected events that also produced a TOF signal.
+
+**Recovered IC efficiency (standard)**: uses T_grid2 (single mesh plane) as the known geometric factor.
+
+**Recovered IC efficiency (alternative)**: uses τ_wires2 = T_mesh³ as the known geometric factor. Note: a ~5% overestimate arises from spatial correlations — particles selected by the grid2 wire pattern land preferentially in the open areas of the downstream WP6/WP5/WP4 planes (same pitch, short spacing), making the effective τ_wires2 higher than the analytic T_mesh³ for a uniform beam.
+
+The derivation of these efficiency estimators — including counting equations, cancellation of upstream transmissions, and Poisson uncertainties — is reproduced in the **Background Info** tab of the frontend (separate derivation for each geometry).
 
 ---
 
 ## Frontend tabs
 
 ### Simulation tab
-Contains the full interactive simulation interface: parameter sidebar, run button, histograms, 2-D scatter / heatmap, derived-quantities panel, per-plane offset table, and geometry diagrams.
+Contains the full interactive simulation interface: parameter sidebar, run button, histograms, 2-D scatter / heatmap, derived-quantities panel, per-plane offset table, and geometry diagrams. The **Alt. Geometry** toggle in the header switches between standard and alternative MCP2 configurations; the beamline schematic, geometry z-view diagrams, mesh-type selector, analytic-T display, and derived-quantities formulas all update accordingly.
 
 ### Background Info tab
-Renders a derivation document (via MathJax) covering:
-- Counting equations for N_MCP, N_IC, and N_MCP∩IC
-- Cancellation of upstream transmissions
-- Extraction formulas for η_MCP and η_IC from coincidence ratios
-- Numerical example
-- Poisson uncertainty propagation for both efficiencies
+Renders a derivation document (via MathJax). The document shown depends on the active geometry mode:
+
+**Standard geometry**: counting equations, cancellation of upstream transmissions, extraction formulas for η_MCP and η_IC, numerical example, Poisson uncertainty propagation.
+
+**Alternative geometry**: modified counting equations with τ_grid2 in the MCP rate, derivation of η_IC = N_coin / (N_MCP · τ_wires2), numerical example with MN4 mesh, Poisson uncertainties.
 
 ---
 
