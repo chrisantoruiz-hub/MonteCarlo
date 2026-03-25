@@ -304,6 +304,15 @@
     <div class="subtitle">MCP1 + MCP2 geometry · 45° wire planes · Coincidence tracking · Random offsets</div>
   </div>
   <span class="badge">v2.0</span>
+  <button id="btn-alt-mode" onclick="toggleMode()" style="
+    margin-left:auto; padding:5px 14px; border-radius:5px; font-size:.78rem; font-weight:600;
+    background:#0c1020; border:1px solid #2a3560; color:#6b7a99; cursor:pointer;
+    transition:all .15s; letter-spacing:.02em;">
+    Alt. Geometry
+  </button>
+  <span id="alt-mode-badge" style="
+    display:none; background:#7c3aed; color:#fff; font-size:.65rem; font-weight:700;
+    padding:2px 8px; border-radius:4px; letter-spacing:.04em;">ALT</span>
 </header>
 
 <div class="app">
@@ -398,7 +407,7 @@
                oninput="syncSlider('tof_fwhm', this.value, v => v+' ps')">
       </div>
       <div class="grid2-selector">
-        <div class="grid2-selector-label">Grid2 type</div>
+        <div class="grid2-selector-label" id="grid2-selector-label">Grid2 type</div>
         <div class="grid2-btn-group">
           <button class="grid2-btn" data-name="MN4"  data-pitch="1238" data-thick="32"  onclick="selectGrid2(this)">MN4</button>
           <button class="grid2-btn active" data-name="MN8"  data-pitch="803"  data-thick="43"  onclick="selectGrid2(this)">MN8</button>
@@ -412,13 +421,17 @@
           <span class="at-label">grid1 — MN4 mesh</span>
           <span class="at-val" id="at-grid1">—</span>
         </div>
-        <div class="analytic-t-row">
+        <div class="analytic-t-row" id="at-wp-row">
           <span class="at-label">wire plane (single)</span>
           <span class="at-val" id="at-wp">—</span>
         </div>
         <div class="analytic-t-row">
           <span class="at-label" id="at-grid2-label">grid2 — MN8 mesh</span>
           <span class="at-val" id="at-grid2">—</span>
+        </div>
+        <div class="analytic-t-row" id="at-wires2-row" style="display:none">
+          <span class="at-label">&tau;<sub>wires2</sub> = T³ (WP6·WP5·WP4)</span>
+          <span class="at-val" id="at-wires2">—</span>
         </div>
       </div>
     </div>
@@ -503,7 +516,7 @@
     <div id="sim-tab" style="display:contents">
 
     <div id="geometry-card">
-      <h4>Beamline Layout (not to scale) — MCP1: grid1+WP1-3 | MCP2: WP4-6+grid2 | IC</h4>
+      <h4 id="beamline-title">Beamline Layout (not to scale) — MCP1: grid1+WP1-3 | MCP2: WP4-6+grid2 | IC</h4>
       <div class="beamline-svg-wrap">
         <svg id="beamline-svg" width="960" height="100" xmlns="http://www.w3.org/2000/svg"
              style="display:block; min-width:600px"></svg>
@@ -584,7 +597,7 @@
     </div><!-- /sim-tab -->
 
     <div id="bg-tab" style="display:none">
-      <div class="bg-doc">
+      <div id="bg-doc-orig" class="bg-doc">
         <h2 class="bg-title">Determination of MCP and IC Efficiencies from Coincidence Spectra</h2>
 
         <h3 class="bg-section">1. Experimental Geometry</h3>
@@ -656,7 +669,71 @@
 
         <h3 class="bg-section">Conclusion</h3>
         <p>Detector efficiencies can be extracted purely from coincidence ratios. Under Poisson statistics, the fractional uncertainty is determined by the inverse square roots of the measured counts.</p>
-      </div>
+      </div><!-- /bg-doc-orig -->
+
+      <!-- ── Alternative geometry derivation ─────────────────────────────── -->
+      <div id="bg-doc-alt" class="bg-doc" style="display:none">
+        <h2 class="bg-title">Efficiency Extraction — Alternative Geometry (MCP2 Reversed)</h2>
+
+        <h3 class="bg-section">1. Experimental Geometry</h3>
+        <p>In the alternative configuration MCP2 faces the opposite direction. The beam traverses:</p>
+        <ol>
+          <li>Grid 1 with transmission \(\tau_{\text{grid1}}\)</li>
+          <li>MCP1 wire planes (WP1, WP2, WP3) with combined transmission \(\tau_{\text{wires1}}\)</li>
+          <li>Grid 2 with transmission \(\tau_{\text{grid2}}\) — <em>now the first element of MCP2</em></li>
+          <li>MCP2 wire planes (WP6, WP5, WP4) with combined transmission \(\tau_{\text{wires2}}\) — <em>downstream of Grid 2</em></li>
+          <li>Ion Chamber (IC)</li>
+        </ol>
+        <p>All four MCP2 elements (Grid 2 and WP6, WP5, WP4) use the same selectable MN square mesh with single-plane transmission \(T_{\text{MN}}\), so</p>
+        \[\tau_{\text{grid2}} = T_{\text{MN}}^2, \qquad \tau_{\text{wires2}} = T_{\text{MN}}^6 = \tau_{\text{grid2}}^3.\]
+        <p>The MCP STOP signal fires when a particle passes <em>through</em> Grid 2 (wire-hit kills the particle). The IC is reached only by particles that subsequently pass WP6, WP5, and WP4.</p>
+
+        <h3 class="bg-section">2. Counting Equations</h3>
+
+        <h4 class="bg-subsection">MCP Coincidence Spectrum</h4>
+        \[N_{\text{MCP}} = N_{\text{tot}}\;\tau_{\text{grid1}}\;\tau_{\text{wires1}}\;\tau_{\text{grid2}}\;\eta_{\text{MCP}}\]
+
+        <h4 class="bg-subsection">IC Spectrum</h4>
+        \[N_{\text{IC}} = N_{\text{tot}}\;\tau_{\text{grid1}}\;\tau_{\text{wires1}}\;\tau_{\text{grid2}}\;\tau_{\text{wires2}}\;\eta_{\text{IC}}\]
+
+        <h4 class="bg-subsection">Overlap Spectrum (MCP &cap; IC)</h4>
+        \[N_{\text{MCP}\cap\text{IC}} = N_{\text{tot}}\;\tau_{\text{grid1}}\;\tau_{\text{wires1}}\;\tau_{\text{grid2}}\;\tau_{\text{wires2}}\;\eta_{\text{MCP}}\;\eta_{\text{IC}}\]
+
+        <h3 class="bg-section">3. Extraction of Efficiencies</h3>
+        <p>Dividing (3) by (2) cancels \(N_{\text{tot}}\,\tau_{\text{grid1}}\,\tau_{\text{wires1}}\,\tau_{\text{grid2}}\,\tau_{\text{wires2}}\):</p>
+        \[\boxed{\eta_{\text{MCP}} = \frac{N_{\text{MCP}\cap\text{IC}}}{N_{\text{IC}}}}\]
+        <p>Dividing (3) by (1) cancels \(N_{\text{tot}}\,\tau_{\text{grid1}}\,\tau_{\text{wires1}}\,\tau_{\text{grid2}}\):</p>
+        \[\boxed{\eta_{\text{IC}} = \frac{N_{\text{MCP}\cap\text{IC}}}{N_{\text{MCP}}\;\tau_{\text{wires2}}}}\]
+        <p>All upstream transmission factors and \(N_{\text{tot}}\) cancel. The key difference from the standard geometry is that \(\tau_{\text{wires2}}\) — not \(\tau_{\text{grid2}}\) — appears in the denominator of \(\eta_{\text{IC}}\).</p>
+
+        <h3 class="bg-section">4. Numerical Example</h3>
+        <p>Assume MN4 mesh for all MCP2 planes: \(T_{\text{MN4}} = ((1238-32)/1238)^2 \approx 0.94897\). With:</p>
+        \[N_{\text{tot}} = 100,\quad \tau_{\text{grid1}} = 0.949,\quad \tau_{\text{wires1}} = 0.980^3 = 0.941\]
+        \[\tau_{\text{grid2}} = T_{\text{MN4}} = 0.94897,\quad \tau_{\text{wires2}} = T_{\text{MN4}}^3 = 0.8543\]
+        \[\eta_{\text{MCP}} = 0.95,\quad \eta_{\text{IC}} = 0.95\]
+
+        <h4 class="bg-subsection">Upstream and full transmissions</h4>
+        \[\tau_{\text{up}} = \tau_{\text{grid1}}\,\tau_{\text{wires1}}\,\tau_{\text{grid2}} = 0.949 \times 0.941 \times 0.94897 \approx 0.8476\]
+        \[\tau_{\text{full}} = \tau_{\text{up}}\,\tau_{\text{wires2}} = 0.8476 \times 0.8543 \approx 0.7243\]
+
+        <h4 class="bg-subsection">Counts</h4>
+        \[N_{\text{MCP}} = 100 \times 0.8476 \times 0.95 = 80.52\]
+        \[N_{\text{IC}}  = 100 \times 0.7243 \times 0.95 = 68.81\]
+        \[N_{\text{MCP}\cap\text{IC}} = 100 \times 0.7243 \times 0.95^2 = 65.37\]
+        <p>Efficiencies are recovered:</p>
+        \[\eta_{\text{MCP}} = \frac{65.37}{68.81} = 0.95\]
+        \[\eta_{\text{IC}} = \frac{65.37}{80.52 \times 0.8543} = 0.95\]
+
+        <h3 class="bg-section">5. Poisson Counting Uncertainties</h3>
+        <p>With \(\sigma_N = \sqrt{N}\) for each measured count:</p>
+        \[\sigma_{\eta_{\text{MCP}}} = \eta_{\text{MCP}}\sqrt{\frac{1}{N_{\text{MCP}\cap\text{IC}}} + \frac{1}{N_{\text{IC}}}}\]
+        \[\sigma_{\eta_{\text{IC}}} = \eta_{\text{IC}}\sqrt{\frac{1}{N_{\text{MCP}\cap\text{IC}}} + \frac{1}{N_{\text{MCP}}}}\]
+        <p>Note: \(\tau_{\text{wires2}}\) is a geometric constant (no statistical uncertainty), so the uncertainty structure is identical to the standard geometry.</p>
+
+        <h3 class="bg-section">Conclusion</h3>
+        <p>With the reversed MCP2 geometry, \(\tau_{\text{grid2}}\) enters the MCP rate but not the IC rate directly. Efficiency extraction is still possible from coincidence ratios alone, using \(\tau_{\text{wires2}} = T_{\text{MN}}^3\) as the known geometric factor.</p>
+      </div><!-- /bg-doc-alt -->
+
     </div><!-- /bg-tab -->
 
   </main>
@@ -669,6 +746,7 @@
    ════════════════════════════════════════════════════════════════════════════ */
 let lastStats = null;
 let simRunning = false;
+let _altMode = false;
 
 /* ════════════════════════════════════════════════════════════════════════════
    UTILITIES
@@ -685,7 +763,7 @@ function syncSlider(key, value, formatter) {
 /* ════════════════════════════════════════════════════════════════════════════
    PARAMETER COLLECTION
    ════════════════════════════════════════════════════════════════════════════ */
-// Grid2 selection state
+// Grid2 / alt-mesh selection state
 let _grid2PitchUm = 803, _grid2ThickUm = 43, _grid2Name = 'MN8';
 
 function selectGrid2(btn) {
@@ -694,15 +772,69 @@ function selectGrid2(btn) {
   _grid2PitchUm = parseInt(btn.dataset.pitch);
   _grid2ThickUm = parseInt(btn.dataset.thick);
   _grid2Name    = btn.dataset.name;
-  document.getElementById('at-grid2-label').textContent = `grid2 — ${_grid2Name} mesh`;
+  _updateAnalyticTBlock();
+  drawGeometryPlots();
+}
+
+function _updateAnalyticTBlock() {
   const T = Math.pow((_grid2PitchUm - _grid2ThickUm) / _grid2PitchUm, 2);
+  if (_altMode) {
+    document.getElementById('at-grid2-label').textContent = `MCP2 planes — ${_grid2Name} mesh`;
+    document.getElementById('at-wp-row').style.display = '';   // show cyl. WP T
+    document.getElementById('at-wires2-row').style.display = '';
+    document.getElementById('at-wires2').textContent = Math.pow(T, 3).toFixed(5);
+  } else {
+    document.getElementById('at-grid2-label').textContent = `grid2 — ${_grid2Name} mesh`;
+    document.getElementById('at-wires2-row').style.display = 'none';
+  }
   document.getElementById('at-grid2').textContent = T.toFixed(5);
-  // Redraw the grid2 geometry diagram
-  const geoEl = document.getElementById('geo-grid2');
-  if (geoEl) {
-    geoEl.innerHTML = '';
-    drawOnePlane({ id: 'geo-grid2', label: `Grid2 · ${_grid2Name}`, z: 0.520,
-                   type: 'mesh', pitch: _grid2PitchUm / 1000, color: '#8b5cf6' });
+}
+
+function toggleMode() {
+  _altMode = !_altMode;
+  const btn = document.getElementById('btn-alt-mode');
+  const badge = document.getElementById('alt-mode-badge');
+  if (_altMode) {
+    btn.style.background = '#3b1f6e';
+    btn.style.borderColor = '#7c3aed';
+    btn.style.color = '#c4b5fd';
+    badge.style.display = '';
+    // Switch grid2 selector to MN4 default
+    document.getElementById('grid2-selector-label').textContent = 'MCP2 mesh type (all planes)';
+    const mn4btn = document.querySelector('.grid2-btn[data-name="MN4"]');
+    if (mn4btn && _grid2Name !== 'MN4') {
+      document.querySelectorAll('.grid2-btn').forEach(b => b.classList.remove('active'));
+      mn4btn.classList.add('active');
+      _grid2PitchUm = 1238; _grid2ThickUm = 32; _grid2Name = 'MN4';
+    }
+  } else {
+    btn.style.background = '#0c1020';
+    btn.style.borderColor = '#2a3560';
+    btn.style.color = '#6b7a99';
+    badge.style.display = 'none';
+    document.getElementById('grid2-selector-label').textContent = 'Grid2 type';
+    // Restore MN8 default
+    const mn8btn = document.querySelector('.grid2-btn[data-name="MN8"]');
+    if (mn8btn) {
+      document.querySelectorAll('.grid2-btn').forEach(b => b.classList.remove('active'));
+      mn8btn.classList.add('active');
+      _grid2PitchUm = 803; _grid2ThickUm = 43; _grid2Name = 'MN8';
+    }
+  }
+  _updateAnalyticTBlock();
+  // Update beamline title and diagrams
+  const title = _altMode
+    ? 'Beamline Layout (not to scale) — MCP1: grid1+WP1-3 | MCP2: grid2+WP6-4 | IC  [ALT]'
+    : 'Beamline Layout (not to scale) — MCP1: grid1+WP1-3 | MCP2: WP4-6+grid2 | IC';
+  document.getElementById('beamline-title').textContent = title;
+  drawBeamline();
+  drawGeometryPlots();
+  // If bg-tab is open, update which doc is visible
+  const bgTab = document.getElementById('bg-tab');
+  if (bgTab && bgTab.style.display !== 'none') {
+    document.getElementById('bg-doc-orig').style.display = _altMode ? 'none' : '';
+    document.getElementById('bg-doc-alt').style.display  = _altMode ? '' : 'none';
+    if (window.MathJax) MathJax.typesetPromise();
   }
 }
 
@@ -711,7 +843,11 @@ function switchTab(tab, btn) {
   btn.classList.add('active');
   document.getElementById('sim-tab').style.display = tab === 'sim' ? 'contents' : 'none';
   document.getElementById('bg-tab').style.display  = tab === 'bg'  ? 'block'    : 'none';
-  if (tab === 'bg' && window.MathJax) MathJax.typesetPromise();
+  if (tab === 'bg') {
+    document.getElementById('bg-doc-orig').style.display = _altMode ? 'none' : '';
+    document.getElementById('bg-doc-alt').style.display  = _altMode ? '' : 'none';
+    if (window.MathJax) MathJax.typesetPromise();
+  }
 }
 
 function getParams() {
@@ -736,6 +872,7 @@ function getParams() {
     fill_ic_detected: document.getElementById('chk-ic-det').checked,
     grid2_pitch_um:   _grid2PitchUm,
     grid2_thick_um:   _grid2ThickUm,
+    alt_mode:         _altMode,
   };
 }
 
@@ -957,6 +1094,24 @@ function renderHeatmapIC(h2d) {
    Section 5: three headline rates + coincidence as primary
    ════════════════════════════════════════════════════════════════════════════ */
 function renderDerivedQuantities(s) {
+  // IC efficiency denominator differs between original and alt geometry
+  let icEffLabel, icEffFormula, icEffValue, icEffCounts;
+  if (s.alt_mode) {
+    const tau_w2 = s.alt_wires2_T;
+    const denom  = s.N_tof_recorded * tau_w2;
+    icEffLabel   = 'Coincidence events / (TOF recorded × τ_wires2)';
+    icEffFormula = `N_coin / (N_TOF × τ_wires2)\n= ${fmt(s.N_coin_TOF_IC)} / (${fmt(s.N_tof_recorded)} × ${tau_w2.toFixed(4)})`;
+    icEffValue   = pct(s.N_tof_recorded > 0 ? s.N_coin_TOF_IC / denom : 0);
+    icEffCounts  = `τ_wires2 = T³ = ${tau_w2.toFixed(4)};  denom = ${denom.toFixed(1)}`;
+  } else {
+    const T_g2  = s.grid2_analytic_T;
+    const denom = s.N_tof_recorded * T_g2;
+    icEffLabel   = 'Coincidence events / (TOF recorded × T_grid2)';
+    icEffFormula = `N_coin / (N_TOF × T_grid2)\n= ${fmt(s.N_coin_TOF_IC)} / (${fmt(s.N_tof_recorded)} × ${T_g2.toFixed(4)})`;
+    icEffValue   = pct(s.N_tof_recorded > 0 ? s.N_coin_TOF_IC / denom : 0);
+    icEffCounts  = `denom = ${denom.toFixed(1)}`;
+  }
+
   const cards = [
     {
       index: 'TOF Recorded Fraction',
@@ -984,15 +1139,23 @@ function renderDerivedQuantities(s) {
     },
     {
       index: 'Grid Transmission',
-      label: 'Events passing both grid1 AND grid2 / N generated',
-      formula: `N_pass_grid2 / N_generated\n= ${fmt(s.N_pass_grid2)} / ${fmt(s.N_generated)}`,
-      value: pct(s.transmission_both_grids),
-      counts: `N_pass_grid2 = ${fmt(s.N_pass_grid2)}`,
+      label: s.alt_mode
+        ? 'Events passing grid1, WP1–3, grid2, WP6, WP5, WP4 / N generated'
+        : 'Events passing both grid1 AND grid2 / N generated',
+      formula: s.alt_mode
+        ? `N_reach_IC_geom / N_generated\n= ${fmt(s.N_reach_IC_geometric)} / ${fmt(s.N_generated)}`
+        : `N_pass_grid2 / N_generated\n= ${fmt(s.N_pass_grid2)} / ${fmt(s.N_generated)}`,
+      value: s.alt_mode
+        ? pct(s.N_reach_IC_geometric / s.N_generated)
+        : pct(s.transmission_both_grids),
+      counts: s.alt_mode
+        ? `N_reach_IC_geom = ${fmt(s.N_reach_IC_geometric)}`
+        : `N_pass_grid2 = ${fmt(s.N_pass_grid2)}`,
       coin: false,
     },
     {
       index: 'Recovered MCP Efficiency',
-      label: 'Coincidence events / IC detected',
+      label: 'Coincidence events / IC detected  [= N_coin / N_IC]',
       formula: `N_coin / N_IC_det\n= ${fmt(s.N_coin_TOF_IC)} / ${fmt(s.N_detected_IC)}`,
       value: pct(s.N_detected_IC > 0 ? s.N_coin_TOF_IC / s.N_detected_IC : 0),
       counts: `N_coin = ${fmt(s.N_coin_TOF_IC)}`,
@@ -1000,10 +1163,10 @@ function renderDerivedQuantities(s) {
     },
     {
       index: 'Recovered IC Efficiency',
-      label: 'Coincidence events / (TOF recorded × T_grid2)',
-      formula: `N_coin / (N_TOF × T_grid2)\n= ${fmt(s.N_coin_TOF_IC)} / (${fmt(s.N_tof_recorded)} × ${s.grid2_analytic_T.toFixed(4)})`,
-      value: pct(s.N_tof_recorded > 0 ? s.N_coin_TOF_IC / (s.N_tof_recorded * s.grid2_analytic_T) : 0),
-      counts: `denom = ${(s.N_tof_recorded * s.grid2_analytic_T).toFixed(1)}`,
+      label: icEffLabel,
+      formula: icEffFormula,
+      value: icEffValue,
+      counts: icEffCounts,
       coin: false,
     },
   ];
@@ -1134,23 +1297,36 @@ function drawBeamline() {
   const W = 960, H = 100, yc = H / 2, pad = 36;
   const drawW = W - 2 * pad;
 
-  // All z values relative to beam entry; source at -0.5, IC at 0.620
   const Z_MIN = -0.50, Z_MAX = 0.620;
   const Z_SPAN = Z_MAX - Z_MIN;
   const toX = z => pad + ((z - Z_MIN) / Z_SPAN) * drawW;
 
-  const elements = [
+  // Alt geometry: grid2 first, then WP6,WP5,WP4 downstream (all MN mesh)
+  const origElements = [
     { z: -0.500, label: 'Source',  color: '#4ade80',  type: 'dot'  },
     { z:  0.000, label: 'Grid1',   color: '#3b82f6',  type: 'mesh' },
-    { z:  0.010, label: 'WP1',     color: '#64748b',  type: 'wire', note: 'x' },
-    { z:  0.035, label: 'WP2',     color: '#94a3b8',  type: 'wire', note: '45' },
-    { z:  0.037, label: 'WP3',     color: '#94a3b8',  type: 'wire', note: '45' },
+    { z:  0.010, label: 'WP1',     color: '#64748b',  type: 'wire', note: 'x'   },
+    { z:  0.035, label: 'WP2',     color: '#94a3b8',  type: 'wire', note: '45'  },
+    { z:  0.037, label: 'WP3',     color: '#94a3b8',  type: 'wire', note: '45'  },
     { z:  0.481, label: 'WP4',     color: '#64748b',  type: 'wire', note: '-45' },
     { z:  0.483, label: 'WP5',     color: '#94a3b8',  type: 'wire', note: '-45' },
-    { z:  0.508, label: 'WP6',     color: '#64748b',  type: 'wire', note: 'x' },
+    { z:  0.508, label: 'WP6',     color: '#64748b',  type: 'wire', note: 'x'   },
     { z:  0.520, label: 'Grid2',   color: '#8b5cf6',  type: 'mesh' },
     { z:  0.620, label: 'IC',      color: '#f59e0b',  type: 'ic'   },
   ];
+  const altElements = [
+    { z: -0.500, label: 'Source',  color: '#4ade80',  type: 'dot'  },
+    { z:  0.000, label: 'Grid1',   color: '#3b82f6',  type: 'mesh' },
+    { z:  0.010, label: 'WP1',     color: '#64748b',  type: 'wire', note: 'x'   },
+    { z:  0.035, label: 'WP2',     color: '#94a3b8',  type: 'wire', note: '45'  },
+    { z:  0.037, label: 'WP3',     color: '#94a3b8',  type: 'wire', note: '45'  },
+    { z:  0.520, label: 'Grid2',   color: '#8b5cf6',  type: 'mesh' },
+    { z:  0.532, label: 'WP6',     color: '#a78bfa',  type: 'mesh' },
+    { z:  0.557, label: 'WP5',     color: '#a78bfa',  type: 'mesh-45' },
+    { z:  0.559, label: 'WP4',     color: '#a78bfa',  type: 'mesh-45' },
+    { z:  0.620, label: 'IC',      color: '#f59e0b',  type: 'ic'   },
+  ];
+  const elements = _altMode ? altElements : origElements;
 
   let inner = `
     <defs>
@@ -1172,8 +1348,9 @@ function drawBeamline() {
             <text x="${(xMcp1a + xMcp1b)/2}" y="12" text-anchor="middle"
                   font-size="8" fill="#1e3a5a" font-family="monospace">MCP1</text>`;
 
-  // MCP2 bracket — extends from WP4 at z=0.481 to grid2 at z=0.520
-  const xMcp2a = toX(0.479), xMcp2b = toX(0.522);
+  // MCP2 bracket: original = WP4(0.481) to grid2(0.520); alt = grid2(0.520) to WP4(0.559)
+  const xMcp2a = toX(_altMode ? 0.518 : 0.479);
+  const xMcp2b = toX(_altMode ? 0.561 : 0.522);
   inner += `<rect x="${xMcp2a}" y="4" width="${xMcp2b - xMcp2a}" height="${H - 8}"
                   fill="none" stroke="#3a1e5a" stroke-width="1" rx="2" stroke-dasharray="3,2"/>
             <text x="${(xMcp2a + xMcp2b)/2}" y="12" text-anchor="middle"
@@ -1215,6 +1392,12 @@ function drawBeamline() {
                       stroke="${el.color}" stroke-width="2"/>
                 <line x1="${x + 1}" y1="${yc - 18}" x2="${x + 1}" y2="${yc + 18}"
                       stroke="${el.color}" stroke-width="2"/>`;
+    } else if (el.type === 'mesh-45') {
+      // Tilted mesh plane (alt WP5/WP4): show as tilted double line
+      inner += `<line x1="${x - 14}" y1="${yc + 14}" x2="${x + 14}" y2="${yc - 14}"
+                      stroke="${el.color}" stroke-width="1.5" opacity="0.9"/>
+                <line x1="${x - 11}" y1="${yc + 14}" x2="${x + 17}" y2="${yc - 14}"
+                      stroke="${el.color}" stroke-width="1.5" opacity="0.9"/>`;
     } else if (el.type === 'ic') {
       inner += `<rect x="${x - 4}" y="${yc - 20}" width="8" height="40"
                       fill="${el.color}" opacity="0.7" rx="1"/>`;
@@ -1258,7 +1441,8 @@ function drawBeamline() {
    PLANE GEOMETRY Z-VIEW PLOTS
    ════════════════════════════════════════════════════════════════════════════ */
 function drawGeometryPlots() {
-  const planes = [
+  const meshP = _grid2PitchUm / 1000, meshLabel = _grid2Name;
+  const origPlanes = [
     { id: 'geo-grid1', label: 'Grid1', z: 0.000, type: 'mesh',     pitch: 1.238, color: '#3b82f6' },
     { id: 'geo-wp1',   label: 'WP1',   z: 0.010, type: 'vertical', pitch: 1.000, color: '#64748b' },
     { id: 'geo-wp2',   label: 'WP2',   z: 0.035, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
@@ -1266,8 +1450,22 @@ function drawGeometryPlots() {
     { id: 'geo-wp4',   label: 'WP4',   z: 0.481, type: 'vertical', pitch: 1.000, color: '#64748b', tilt: '−45° to z' },
     { id: 'geo-wp5',   label: 'WP5',   z: 0.483, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '−45° to z' },
     { id: 'geo-wp6',   label: 'WP6',   z: 0.508, type: 'vertical', pitch: 1.000, color: '#64748b' },
-    { id: 'geo-grid2', label: `Grid2 · ${_grid2Name}`, z: 0.520, type: 'mesh', pitch: _grid2PitchUm / 1000, color: '#8b5cf6' },
+    { id: 'geo-grid2', label: `Grid2 · ${meshLabel}`, z: 0.520, type: 'mesh', pitch: meshP, color: '#8b5cf6' },
   ];
+  const altPlanes = [
+    { id: 'geo-grid1', label: 'Grid1',           z: 0.000,  type: 'mesh',     pitch: 1.238, color: '#3b82f6' },
+    { id: 'geo-wp1',   label: 'WP1',             z: 0.010,  type: 'vertical', pitch: 1.000, color: '#64748b' },
+    { id: 'geo-wp2',   label: 'WP2',             z: 0.035,  type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp3',   label: 'WP3',             z: 0.037,  type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp4',   label: `WP4 · ${meshLabel}`, z: 0.559, type: 'mesh', pitch: meshP, color: '#a78bfa', tilt: '+45° to z' },
+    { id: 'geo-wp5',   label: `WP5 · ${meshLabel}`, z: 0.557, type: 'mesh', pitch: meshP, color: '#a78bfa', tilt: '+45° to z' },
+    { id: 'geo-wp6',   label: `WP6 · ${meshLabel}`, z: 0.532, type: 'mesh', pitch: meshP, color: '#a78bfa' },
+    { id: 'geo-grid2', label: `Grid2 · ${meshLabel}`, z: 0.520, type: 'mesh', pitch: meshP, color: '#8b5cf6' },
+  ];
+  const planes = _altMode ? altPlanes : origPlanes;
+  // Clear all geo divs before redrawing
+  ['geo-grid1','geo-wp1','geo-wp2','geo-wp3','geo-wp4','geo-wp5','geo-wp6','geo-grid2']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
   for (const p of planes) drawOnePlane(p);
 }
 
@@ -1384,17 +1582,15 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('lbl-offset_amp').textContent = '0.50 mm';
   document.getElementById('lbl-tof_fwhm').textContent   = '400 ps';
 
-  // Analytic transmission — grid1 and WP are fixed; grid2 updates with selector
+  // Analytic transmission — grid1 and WP are fixed; grid2/alt-mesh updates with selector
   (function() {
     function analyticT(pitch, thick, axes) {
       return Math.pow((pitch - thick) / pitch, axes);
     }
     document.getElementById('at-grid1').textContent = analyticT(1238e-6, 32e-6, 2).toFixed(5);
     document.getElementById('at-wp').textContent    = analyticT(1000e-6, 20e-6, 1).toFixed(5);
-    // grid2 initialised from default MN8 state (_grid2PitchUm / _grid2ThickUm)
-    const T_grid2 = Math.pow((_grid2PitchUm - _grid2ThickUm) / _grid2PitchUm, 2);
-    document.getElementById('at-grid2').textContent = T_grid2.toFixed(5);
   })();
+  _updateAnalyticTBlock();
 
   drawBeamline();
   drawGeometryPlots();

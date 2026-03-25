@@ -91,6 +91,15 @@ class SimParams(BaseModel):
         description="Grid2 wire thickness (µm); default = MN8",
     )
 
+    # Alternative geometry
+    alt_mode: bool = Field(
+        default=False,
+        description=(
+            "Use alternative geometry: MCP2 flipped so grid2 comes first, "
+            "then WP6,WP5,WP4 downstream. All MCP2 planes use the same selectable MN mesh."
+        ),
+    )
+
     # Optional / advanced
     seed: Optional[int] = Field(
         default=None,
@@ -179,6 +188,10 @@ class SimStats(BaseModel):
     grid2_analytic_T: float
 
     elapsed_s: float
+
+    # Alt-geometry fields (present in both modes; default 0/False for original)
+    alt_mode: bool = False
+    alt_wires2_T: float = 0.0   # τ_wires2 = T_mesh^3 for WP6+WP5+WP4 (alt only)
 
     # Legacy union stats (kept for three-card panel)
     N_tof_or_ic: int

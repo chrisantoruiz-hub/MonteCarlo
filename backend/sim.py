@@ -120,6 +120,23 @@ PLANE_Z = [
     Z_IC,
 ]
 
+# ── Alternative geometry (MCP2 flipped) ───────────────────────────────────────
+# Order: grid1 → WP1,2,3 → grid2 → WP6,5,4 → IC
+# Grid2 and WP6,WP5,WP4 all use the same selectable MN mesh.
+# Distances within MCP2 are preserved (reflected about grid2 z-position).
+ALT_PLANE_NAMES = ['grid1', 'WP1', 'WP2', 'WP3', 'grid2', 'WP6', 'WP5', 'WP4', 'IC']
+ALT_PLANE_Z = [
+    Z_GRID1,
+    0.010,
+    0.035,
+    0.037,
+    Z_GRID2,               # grid2: now first in MCP2
+    Z_GRID2 + 0.012,       # WP6: 12 mm downstream of grid2
+    Z_GRID2 + 0.037,       # WP5: 37 mm downstream (25 mm after WP6)
+    Z_GRID2 + 0.039,       # WP4: 39 mm downstream (2 mm after WP5)
+    Z_IC,
+]
+
 
 # ── Small helpers ─────────────────────────────────────────────────────────────
 
@@ -520,5 +537,305 @@ def run_simulation(
         n_total = n_ic_total,
         n_shown = int(n_shown),
     )
+
+    return histograms, stats, scatter_ic, hist2d_ic, offsets
+
+
+# ── Alternative geometry simulation ───────────────────────────────────────────
+
+def run_simulation_alt(
+    N: int,
+    D_source: float,
+    fwhm_xy: float,
+    fwhm_angle: float,
+    energy_mev_per_u: float,
+    A: int,
+    Z: int,
+    eta_MCP: float,
+    eta_IC: float,
+    n_bins: int,
+    seed: Optional[int],
+    relativistic: bool,
+    fill_ic_detected: bool,
+    offset_amp_m: float = 0.0005,
+    offsets: Optional[np.ndarray] = None,
+    tof_fwhm_ps: float = 400.0,
+    alt_mesh_pitch: float = GRID1_PITCH,   # default MN4 (1238 µm)
+    alt_mesh_thick: float = GRID1_THICK,   # default MN4 (32 µm)
+) -> Tuple[Dict, Dict, Dict, Dict, np.ndarray]:
+    """
+    Alternative geometry: MCP2 reversed.
+    Beam order: grid1 → WP1,2,3 → grid2 → WP6,5,4 → IC.
+    Grid2 and WP6,WP5,WP4 all use the same selectable MN square mesh.
+
+    Key physics difference from original:
+    - STOP signal requires passing grid2 wire check (τ_grid2 enters MCP counting equation).
+    - WP6,WP5,WP4 are square mesh planes between grid2 and IC (τ_wires2 = T_mesh^3).
+
+    Counting equations:
+        N_MCP      = N_tot · τ_grid1 · τ_wires1 · τ_grid2 · η_MCP
+        N_IC       = N_tot · τ_grid1 · τ_wires1 · τ_grid2 · τ_wires2 · η_IC
+        N_MCP∩IC   = N_tot · τ_grid1 · τ_wires1 · τ_grid2 · τ_wires2 · η_MCP · η_IC
+
+    Efficiency extraction:
+        η_MCP = N_coin / N_IC
+        η_IC  = N_coin / (N_TOF · τ_wires2)
+    """
+    t_wall_start = time.perf_counter()
+
+    # Offset index order matches ALT_PLANE_NAMES:
+    #   0=grid1, 1=WP1, 2=WP2, 3=WP3, 4=grid2, 5=WP6, 6=WP5, 7=WP4, 8=IC
+    if offsets is None:
+        offsets = generate_offsets(offset_amp_m, seed, N_PLANES)
+    O_GRID1 = offsets[0]
+    O_WP1   = offsets[1]
+    O_WP2   = offsets[2]
+    O_WP3   = offsets[3]
+    O_GRID2 = offsets[4]
+    O_WP6   = offsets[5]
+    O_WP5   = offsets[6]
+    O_WP4   = offsets[7]
+    O_IC    = offsets[8]
+
+    rng = np.random.default_rng(seed)
+    sigma_xy    = fwhm_to_sigma(fwhm_xy)
+    sigma_angle = fwhm_to_sigma(fwhm_angle)
+    z_source    = -D_source
+
+    x0 = rng.normal(0.0, sigma_xy,    N).astype(np.float64)
+    y0 = rng.normal(0.0, sigma_xy,    N).astype(np.float64)
+    tx = rng.normal(0.0, sigma_angle, N).astype(np.float64)
+    ty = rng.normal(0.0, sigma_angle, N).astype(np.float64)
+
+    v, beta, gamma = compute_kinematics(A, energy_mev_per_u, relativistic)
+
+    def pos_at(z: float) -> Tuple[np.ndarray, np.ndarray]:
+        dz = float(z - z_source)
+        return x0 + tx * dz, y0 + ty * dz
+
+    def local_xy(z: float, offset: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        xg, yg = pos_at(z)
+        return xg - offset[0], yg - offset[1]
+
+    alive = np.ones(N, dtype=bool)
+
+    # ── Grid 1 ────────────────────────────────────────────────────────────────
+    xl_g1, yl_g1 = local_xy(Z_GRID1, O_GRID1)
+    ap_g1        = aperture_ok(xl_g1, yl_g1)
+    hit_g1       = (wire_hit(xl_g1, GRID1_PITCH, GRID1_THICK * 0.5) |
+                    wire_hit(yl_g1, GRID1_PITCH, GRID1_THICK * 0.5))
+    pass_g1      = ap_g1 & ~hit_g1
+    start_signal = pass_g1
+    alive        = alive & ap_g1
+    n_wire_g1    = int((alive & hit_g1).sum())
+    alive        = alive & ~hit_g1
+
+    # ── MCP1 wire planes (cylindrical wires, same as original) ───────────────
+    xl_wp1, yl_wp1 = local_xy(0.010, O_WP1)
+    alive          = alive & aperture_ok(xl_wp1, yl_wp1)
+    hit_wp1        = wire_hit(xl_wp1, WP_PITCH, WP_THICK * 0.5)
+    n_wire_wp1     = int((alive & hit_wp1).sum())
+    alive          = alive & ~hit_wp1
+
+    xl_wp2, yl_wp2 = local_xy(0.035, O_WP2)
+    alive          = alive & aperture_ok(xl_wp2, yl_wp2)
+    hit_wp2        = wire_hit(xl_wp2, WP_PITCH, WP_THICK * 0.5)
+    n_wire_wp2     = int((alive & hit_wp2).sum())
+    alive          = alive & ~hit_wp2
+
+    xl_wp3, yl_wp3 = local_xy(0.037, O_WP3)
+    alive          = alive & aperture_ok(xl_wp3, yl_wp3)
+    hit_wp3        = wire_hit(xl_wp3, WP_PITCH, WP_THICK * 0.5)
+    n_wire_wp3     = int((alive & hit_wp3).sum())
+    alive          = alive & ~hit_wp3
+
+    # ── Grid2 — STOP requires passing wire check (alt mode!) ─────────────────
+    xl_g2, yl_g2 = local_xy(Z_GRID2, O_GRID2)
+    ap_g2        = aperture_ok(xl_g2, yl_g2)
+    reach_g2     = alive & ap_g2
+    hit_g2       = (wire_hit(xl_g2, alt_mesh_pitch, alt_mesh_thick * 0.5) |
+                    wire_hit(yl_g2, alt_mesh_pitch, alt_mesh_thick * 0.5))
+    n_wire_g2    = int((reach_g2 & hit_g2).sum())
+    pass_g2      = reach_g2 & ~hit_g2   # must pass grid2 to get STOP or reach IC
+    stop_signal  = pass_g2.copy()
+    tof_defined  = start_signal & stop_signal
+    alive        = pass_g2.copy()        # only grid2-passers continue
+
+    # ── MCP2 wire planes downstream of grid2 (all MN square mesh) ────────────
+    # WP6 at z = Z_GRID2 + 0.012, perpendicular to beam
+    z_alt_wp6      = Z_GRID2 + 0.012
+    xl_wp6, yl_wp6 = local_xy(z_alt_wp6, O_WP6)
+    alive          = alive & aperture_ok(xl_wp6, yl_wp6)
+    hit_wp6        = (wire_hit(xl_wp6, alt_mesh_pitch, alt_mesh_thick * 0.5) |
+                      wire_hit(yl_wp6, alt_mesh_pitch, alt_mesh_thick * 0.5))
+    n_wire_wp6     = int((alive & hit_wp6).sum())
+    alive          = alive & ~hit_wp6
+
+    # WP5 at z = Z_GRID2 + 0.037, tilted +45° (reflected from original −45°)
+    z_alt_wp5      = Z_GRID2 + 0.037
+    xl_wp5, yl_wp5 = local_xy(z_alt_wp5, O_WP5)
+    alive          = alive & aperture_ok(xl_wp5, yl_wp5)
+    hit_wp5        = (wire_hit(xl_wp5, alt_mesh_pitch, alt_mesh_thick * 0.5) |
+                      wire_hit(yl_wp5, alt_mesh_pitch, alt_mesh_thick * 0.5))
+    n_wire_wp5     = int((alive & hit_wp5).sum())
+    alive          = alive & ~hit_wp5
+
+    # WP4 at z = Z_GRID2 + 0.039, tilted +45° (reflected from original −45°)
+    z_alt_wp4      = Z_GRID2 + 0.039
+    xl_wp4, yl_wp4 = local_xy(z_alt_wp4, O_WP4)
+    alive          = alive & aperture_ok(xl_wp4, yl_wp4)
+    hit_wp4        = (wire_hit(xl_wp4, alt_mesh_pitch, alt_mesh_thick * 0.5) |
+                      wire_hit(yl_wp4, alt_mesh_pitch, alt_mesh_thick * 0.5))
+    n_wire_wp4     = int((alive & hit_wp4).sum())
+    alive          = alive & ~hit_wp4
+
+    # ── TOF ───────────────────────────────────────────────────────────────────
+    dz_tof          = Z_GRID2 - Z_GRID1
+    path_len        = dz_tof * np.sqrt(1.0 + tx * tx + ty * ty)
+    tof_ns_all      = (path_len / v) * 1.0e9
+    tof_mcp_accept  = tof_defined & (rng.random(N) < eta_MCP)
+    tof_ns_recorded = tof_ns_all[tof_mcp_accept]
+
+    if tof_fwhm_ps > 0.0 and len(tof_ns_recorded) > 0:
+        sigma_tof_ns    = fwhm_to_sigma(tof_fwhm_ps * 1e-3)
+        tof_ns_recorded = tof_ns_recorded + rng.normal(0.0, sigma_tof_ns,
+                                                        len(tof_ns_recorded))
+
+    # ── IC plane ──────────────────────────────────────────────────────────────
+    xl_ic, yl_ic = local_xy(Z_IC, O_IC)
+    ap_ic        = aperture_ok(xl_ic, yl_ic)
+    reach_ic     = alive & ap_ic
+    ic_det       = reach_ic & (rng.random(N) < eta_IC)
+    ic_mask      = ic_det if fill_ic_detected else reach_ic
+
+    coin_tof_ic = tof_mcp_accept & ic_det
+    tof_or_ic   = tof_mcp_accept | ic_det
+
+    # ── Counters ──────────────────────────────────────────────────────────────
+    n_gen       = N
+    n_sg1       = int(start_signal.sum())
+    n_rg2       = int(stop_signal.sum())
+    n_tof_def   = int(tof_defined.sum())
+    n_tof_rec   = int(tof_mcp_accept.sum())
+    n_pg2       = int(pass_g2.sum())
+    n_ric       = int(reach_ic.sum())
+    n_dic       = int(ic_det.sum())
+    n_coin      = int(coin_tof_ic.sum())
+    n_tof_or_ic = int(tof_or_ic.sum())
+
+    tof_mean = float(np.mean(tof_ns_recorded)) if len(tof_ns_recorded) else 0.0
+    tof_rms  = float(np.std( tof_ns_recorded)) if len(tof_ns_recorded) else 0.0
+
+    elapsed = time.perf_counter() - t_wall_start
+
+    # τ_wires2 for alt efficiency extraction: three MN mesh planes after grid2
+    t_alt_mesh_plane = analytic_T(alt_mesh_pitch, alt_mesh_thick, axes=2)
+    alt_wires2_T     = t_alt_mesh_plane ** 3   # τ_wires2 = T_mesh^3
+
+    stats = dict(
+        N_generated              = n_gen,
+        N_pass_grid1             = n_sg1,
+        N_reach_grid2            = n_rg2,
+        N_tof_defined            = n_tof_def,
+        N_tof_recorded           = n_tof_rec,
+        N_pass_grid2             = n_pg2,
+        N_reach_IC_geometric     = n_ric,
+        N_detected_IC            = n_dic,
+        N_coin_TOF_IC            = n_coin,
+
+        frac_pass_grid1                = n_sg1     / n_gen    if n_gen    else 0.0,
+        frac_reach_grid2_of_start      = n_rg2     / n_sg1    if n_sg1    else 0.0,
+        frac_tof_recorded_of_defined   = n_tof_rec / n_tof_def if n_tof_def else 0.0,
+        frac_IC_det_of_geometric       = n_dic     / n_ric     if n_ric    else 0.0,
+
+        frac_tof_recorded      = n_tof_rec / n_gen if n_gen else 0.0,
+        frac_IC_detected       = n_dic     / n_gen if n_gen else 0.0,
+        frac_coincidence       = n_coin    / n_gen if n_gen else 0.0,
+
+        N_tof_or_ic             = n_tof_or_ic,
+        frac_IC_of_union        = n_dic     / n_tof_or_ic if n_tof_or_ic else 0.0,
+        frac_TOF_of_union       = n_tof_rec / n_tof_or_ic if n_tof_or_ic else 0.0,
+        transmission_both_grids = n_pg2     / n_gen       if n_gen       else 0.0,
+
+        N_wire_hit_grid1 = n_wire_g1,
+        N_wire_hit_WP1   = n_wire_wp1,
+        N_wire_hit_WP2   = n_wire_wp2,
+        N_wire_hit_WP3   = n_wire_wp3,
+        N_wire_hit_WP4   = n_wire_wp4,
+        N_wire_hit_WP5   = n_wire_wp5,
+        N_wire_hit_WP6   = n_wire_wp6,
+        N_wire_hit_grid2 = n_wire_g2,
+
+        tof_mean_ns              = tof_mean,
+        tof_rms_ns               = tof_rms,
+        velocity_m_per_s         = v,
+        beta                     = beta,
+        gamma                    = gamma,
+        grid1_analytic_T         = analytic_T(GRID1_PITCH, GRID1_THICK, axes=2),
+        wp_analytic_T_per_plane  = analytic_T(WP_PITCH, WP_THICK, axes=1),
+        grid2_analytic_T         = analytic_T(alt_mesh_pitch, alt_mesh_thick, axes=2),
+        elapsed_s                = elapsed,
+
+        # Alt-specific fields
+        alt_mode     = True,
+        alt_wires2_T = alt_wires2_T,
+    )
+
+    # ── Histograms ────────────────────────────────────────────────────────────
+    def mkhist(data, xlabel: str, label: str) -> dict:
+        arr = np.asarray(data, dtype=np.float64)
+        if len(arr) == 0:
+            counts = np.zeros(n_bins, dtype=np.int64)
+            edges  = np.linspace(0.0, 1.0, n_bins + 1)
+        else:
+            counts, edges = np.histogram(arr, bins=n_bins)
+        return dict(
+            edges=edges.tolist(), counts=counts.tolist(), label=label,
+            xlabel=xlabel, ylabel="Counts",
+            mean=float(np.mean(arr)) if len(arr) else None,
+            std=float(np.std(arr))   if len(arr) else None,
+            n=int(len(arr)),
+        )
+
+    x_ic_mm = (x0 + tx * (Z_IC - z_source))[ic_mask] * 1e3
+    y_ic_mm = (y0 + ty * (Z_IC - z_source))[ic_mask] * 1e3
+
+    histograms = {
+        "x0":   mkhist(x0 * 1e3,          "x₀ (mm)",   "Initial x₀"),
+        "y0":   mkhist(y0 * 1e3,          "y₀ (mm)",   "Initial y₀"),
+        "tx":   mkhist(tx * 1e3,          "θx (mrad)", "Initial θx"),
+        "ty":   mkhist(ty * 1e3,          "θy (mrad)", "Initial θy"),
+        "x_ic": mkhist(x_ic_mm,           "x_IC (mm)", "Final x at IC"),
+        "y_ic": mkhist(y_ic_mm,           "y_IC (mm)", "Final y at IC"),
+        "tof":  mkhist(tof_ns_recorded,   "TOF (ns)",  "TOF_MCP"),
+    }
+
+    xs_mm_full = x_ic_mm.copy()
+    ys_mm_full = y_ic_mm.copy()
+    n_ic_total = len(xs_mm_full)
+
+    _BIN_MM    = 3.0
+    _BIN_EDGES = np.arange(-30.0, 30.0 + _BIN_MM, _BIN_MM)
+    if n_ic_total > 0:
+        H, xe, ye = np.histogram2d(xs_mm_full, ys_mm_full,
+                                   bins=[_BIN_EDGES, _BIN_EDGES])
+    else:
+        H  = np.zeros((len(_BIN_EDGES) - 1, len(_BIN_EDGES) - 1))
+        xe = ye = _BIN_EDGES.copy()
+    hist2d_ic = dict(x_edges=xe.tolist(), y_edges=ye.tolist(),
+                     counts=H.T.tolist(), n_total=n_ic_total, bin_size_mm=_BIN_MM)
+
+    _N_SCATTER_MAX = 5_000
+    if n_ic_total > _N_SCATTER_MAX:
+        idx    = rng.choice(n_ic_total, _N_SCATTER_MAX, replace=False)
+        xs_sc  = xs_mm_full[idx]
+        ys_sc  = ys_mm_full[idx]
+        n_shown = _N_SCATTER_MAX
+    else:
+        xs_sc  = xs_mm_full
+        ys_sc  = ys_mm_full
+        n_shown = n_ic_total
+    scatter_ic = dict(x=xs_sc.tolist(), y=ys_sc.tolist(),
+                      n_total=n_ic_total, n_shown=int(n_shown))
 
     return histograms, stats, scatter_ic, hist2d_ic, offsets

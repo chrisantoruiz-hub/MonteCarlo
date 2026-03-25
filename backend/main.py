@@ -58,8 +58,11 @@ from sim import (
     Z_IC,
     PLANE_NAMES,
     PLANE_Z,
+    ALT_PLANE_NAMES,
+    ALT_PLANE_Z,
     analytic_T,
     run_simulation,
+    run_simulation_alt,
 )
 
 app = FastAPI(
@@ -188,27 +191,41 @@ def get_config() -> DefaultConfig:
 @app.post("/simulate", response_model=SimResult)
 def simulate(params: SimParams) -> SimResult:
     """Run Monte Carlo simulation and return histogram data plus summary stats."""
+    common_kwargs = dict(
+        N=params.N,
+        D_source=params.D_source,
+        fwhm_xy=params.fwhm_xy,
+        fwhm_angle=params.fwhm_angle,
+        energy_mev_per_u=params.energy_mev_per_u,
+        A=params.A,
+        Z=params.Z,
+        eta_MCP=params.eta_MCP,
+        eta_IC=params.eta_IC,
+        n_bins=params.n_bins,
+        seed=params.seed,
+        relativistic=params.relativistic,
+        fill_ic_detected=params.fill_ic_detected,
+        offset_amp_m=params.offset_amp_mm * 1e-3,
+        offsets=None,
+        tof_fwhm_ps=params.tof_fwhm_ps,
+    )
     try:
-        hists_raw, stats_raw, scatter_raw, hist2d_raw, offsets = run_simulation(
-            N=params.N,
-            D_source=params.D_source,
-            fwhm_xy=params.fwhm_xy,
-            fwhm_angle=params.fwhm_angle,
-            energy_mev_per_u=params.energy_mev_per_u,
-            A=params.A,
-            Z=params.Z,
-            eta_MCP=params.eta_MCP,
-            eta_IC=params.eta_IC,
-            n_bins=params.n_bins,
-            seed=params.seed,
-            relativistic=params.relativistic,
-            fill_ic_detected=params.fill_ic_detected,
-            offset_amp_m=params.offset_amp_mm * 1e-3,
-            offsets=None,
-            tof_fwhm_ps=params.tof_fwhm_ps,
-            grid2_pitch=params.grid2_pitch_um * 1e-6,
-            grid2_thick=params.grid2_thick_um * 1e-6,
-        )
+        if params.alt_mode:
+            hists_raw, stats_raw, scatter_raw, hist2d_raw, offsets = run_simulation_alt(
+                **common_kwargs,
+                alt_mesh_pitch=params.grid2_pitch_um * 1e-6,
+                alt_mesh_thick=params.grid2_thick_um * 1e-6,
+            )
+            pnames = ALT_PLANE_NAMES
+            pz     = ALT_PLANE_Z
+        else:
+            hists_raw, stats_raw, scatter_raw, hist2d_raw, offsets = run_simulation(
+                **common_kwargs,
+                grid2_pitch=params.grid2_pitch_um * 1e-6,
+                grid2_thick=params.grid2_thick_um * 1e-6,
+            )
+            pnames = PLANE_NAMES
+            pz     = PLANE_Z
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
@@ -219,12 +236,12 @@ def simulate(params: SimParams) -> SimResult:
 
     plane_offsets = [
         PlaneOffset(
-            name=PLANE_NAMES[i],
-            z_m=PLANE_Z[i],
+            name=pnames[i],
+            z_m=pz[i],
             dx_mm=round(float(offsets[i, 0]) * 1e3, 4),
             dy_mm=round(float(offsets[i, 1]) * 1e3, 4),
         )
-        for i in range(len(PLANE_NAMES))
+        for i in range(len(pnames))
     ]
 
     return SimResult(
