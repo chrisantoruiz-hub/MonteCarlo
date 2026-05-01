@@ -229,7 +229,9 @@ def run_simulation(
     offset_amp_m: float = 0.0005,      # 0.5 mm default
     offsets: Optional[np.ndarray] = None,  # shape (N_PLANES, 2), overrides amp+seed
     tof_fwhm_ps: float = 400.0,        # TOF timing resolution FWHM in picoseconds
-    grid2_pitch: float = GRID2_PITCH,  # override for different grid2 mesh types
+    grid1_pitch: float = GRID1_PITCH,  # override for MCP1 foil grid
+    grid1_thick: float = GRID1_THICK,
+    grid2_pitch: float = GRID2_PITCH,  # override for MCP2 foil grid
     grid2_thick: float = GRID2_THICK,
 ) -> Tuple[Dict, Dict, Dict, Dict, np.ndarray]:
     """
@@ -294,8 +296,8 @@ def run_simulation(
     # ── Grid 1 (z = 0) ────────────────────────────────────────────────────────
     xl_g1, yl_g1 = local_xy(Z_GRID1, O_GRID1)
     ap_g1        = aperture_ok(xl_g1, yl_g1)
-    hit_g1       = (wire_hit(xl_g1, GRID1_PITCH, GRID1_THICK * 0.5) |
-                    wire_hit(yl_g1, GRID1_PITCH, GRID1_THICK * 0.5))
+    hit_g1       = (wire_hit(xl_g1, grid1_pitch, grid1_thick * 0.5) |
+                    wire_hit(yl_g1, grid1_pitch, grid1_thick * 0.5))
     pass_g1      = ap_g1 & ~hit_g1
 
     start_signal = pass_g1   # start-signal events (passed grid1 wire + aperture)
@@ -461,7 +463,7 @@ def run_simulation(
         velocity_m_per_s   = v,
         beta               = beta,
         gamma              = gamma,
-        grid1_analytic_T   = analytic_T(GRID1_PITCH, GRID1_THICK, axes=2),
+        grid1_analytic_T   = analytic_T(grid1_pitch, grid1_thick, axes=2),
         wp_analytic_T_per_plane = analytic_T(WP_PITCH, WP_THICK, axes=1),
         grid2_analytic_T   = analytic_T(grid2_pitch, grid2_thick, axes=2),
         elapsed_s          = elapsed,
@@ -560,8 +562,12 @@ def run_simulation_alt(
     offset_amp_m: float = 0.0005,
     offsets: Optional[np.ndarray] = None,
     tof_fwhm_ps: float = 400.0,
-    alt_mesh_pitch: float = GRID1_PITCH,   # default MN4 (1238 µm)
-    alt_mesh_thick: float = GRID1_THICK,   # default MN4 (32 µm)
+    grid1_pitch: float = GRID1_PITCH,      # MCP1 foil grid
+    grid1_thick: float = GRID1_THICK,
+    alt_mesh_pitch: float = GRID1_PITCH,   # MCP2 foil (grid2)
+    alt_mesh_thick: float = GRID1_THICK,
+    alt_wp_pitch: float = GRID1_PITCH,     # MCP2 wire planes (WP6/5/4)
+    alt_wp_thick: float = GRID1_THICK,
 ) -> Tuple[Dict, Dict, Dict, Dict, np.ndarray]:
     """
     Alternative geometry: MCP2 reversed.
@@ -622,8 +628,8 @@ def run_simulation_alt(
     # ── Grid 1 ────────────────────────────────────────────────────────────────
     xl_g1, yl_g1 = local_xy(Z_GRID1, O_GRID1)
     ap_g1        = aperture_ok(xl_g1, yl_g1)
-    hit_g1       = (wire_hit(xl_g1, GRID1_PITCH, GRID1_THICK * 0.5) |
-                    wire_hit(yl_g1, GRID1_PITCH, GRID1_THICK * 0.5))
+    hit_g1       = (wire_hit(xl_g1, grid1_pitch, grid1_thick * 0.5) |
+                    wire_hit(yl_g1, grid1_pitch, grid1_thick * 0.5))
     pass_g1      = ap_g1 & ~hit_g1
     start_signal = pass_g1
     alive        = alive & ap_g1
@@ -666,8 +672,8 @@ def run_simulation_alt(
     z_alt_wp6      = Z_GRID2 + 0.012
     xl_wp6, yl_wp6 = local_xy(z_alt_wp6, O_WP6)
     alive          = alive & aperture_ok(xl_wp6, yl_wp6)
-    hit_wp6        = (wire_hit(xl_wp6, alt_mesh_pitch, alt_mesh_thick * 0.5) |
-                      wire_hit(yl_wp6, alt_mesh_pitch, alt_mesh_thick * 0.5))
+    hit_wp6        = (wire_hit(xl_wp6, alt_wp_pitch, alt_wp_thick * 0.5) |
+                      wire_hit(yl_wp6, alt_wp_pitch, alt_wp_thick * 0.5))
     n_wire_wp6     = int((alive & hit_wp6).sum())
     alive          = alive & ~hit_wp6
 
@@ -675,8 +681,8 @@ def run_simulation_alt(
     z_alt_wp5      = Z_GRID2 + 0.037
     xl_wp5, yl_wp5 = local_xy(z_alt_wp5, O_WP5)
     alive          = alive & aperture_ok(xl_wp5, yl_wp5)
-    hit_wp5        = (wire_hit(xl_wp5, alt_mesh_pitch, alt_mesh_thick * 0.5) |
-                      wire_hit(yl_wp5, alt_mesh_pitch, alt_mesh_thick * 0.5))
+    hit_wp5        = (wire_hit(xl_wp5, alt_wp_pitch, alt_wp_thick * 0.5) |
+                      wire_hit(yl_wp5, alt_wp_pitch, alt_wp_thick * 0.5))
     n_wire_wp5     = int((alive & hit_wp5).sum())
     alive          = alive & ~hit_wp5
 
@@ -684,8 +690,8 @@ def run_simulation_alt(
     z_alt_wp4      = Z_GRID2 + 0.039
     xl_wp4, yl_wp4 = local_xy(z_alt_wp4, O_WP4)
     alive          = alive & aperture_ok(xl_wp4, yl_wp4)
-    hit_wp4        = (wire_hit(xl_wp4, alt_mesh_pitch, alt_mesh_thick * 0.5) |
-                      wire_hit(yl_wp4, alt_mesh_pitch, alt_mesh_thick * 0.5))
+    hit_wp4        = (wire_hit(xl_wp4, alt_wp_pitch, alt_wp_thick * 0.5) |
+                      wire_hit(yl_wp4, alt_wp_pitch, alt_wp_thick * 0.5))
     n_wire_wp4     = int((alive & hit_wp4).sum())
     alive          = alive & ~hit_wp4
 
@@ -729,8 +735,7 @@ def run_simulation_alt(
     elapsed = time.perf_counter() - t_wall_start
 
     # τ_wires2 for alt efficiency extraction: three MN mesh planes after grid2
-    t_alt_mesh_plane = analytic_T(alt_mesh_pitch, alt_mesh_thick, axes=2)
-    alt_wires2_T     = t_alt_mesh_plane ** 3   # τ_wires2 = T_mesh^3
+    alt_wires2_T = analytic_T(alt_wp_pitch, alt_wp_thick, axes=2) ** 3   # τ_wires2 = T_wp²×³
 
     stats = dict(
         N_generated              = n_gen,
@@ -771,9 +776,10 @@ def run_simulation_alt(
         velocity_m_per_s         = v,
         beta                     = beta,
         gamma                    = gamma,
-        grid1_analytic_T         = analytic_T(GRID1_PITCH, GRID1_THICK, axes=2),
+        grid1_analytic_T         = analytic_T(grid1_pitch, grid1_thick, axes=2),
         wp_analytic_T_per_plane  = analytic_T(WP_PITCH, WP_THICK, axes=1),
         grid2_analytic_T         = analytic_T(alt_mesh_pitch, alt_mesh_thick, axes=2),
+        alt_wp_analytic_T        = analytic_T(alt_wp_pitch, alt_wp_thick, axes=2),
         elapsed_s                = elapsed,
 
         # Alt-specific fields

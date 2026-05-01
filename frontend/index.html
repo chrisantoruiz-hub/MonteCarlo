@@ -406,19 +406,73 @@
         <input type="range" id="sl-tof_fwhm" min="0" max="2000" step="10" value="400"
                oninput="syncSlider('tof_fwhm', this.value, v => v+' ps')">
       </div>
+      <div class="grid2-selector" style="margin-bottom:8px">
+        <div class="grid2-selector-label">MCP1 foil (grid1)</div>
+        <div class="grid2-btn-group" id="grid1-btn-group">
+          <button class="grid2-btn active" data-name="MN4"  data-pitch="1238" data-thick="32"  onclick="selectGrid1(this)">MN4</button>
+          <button class="grid2-btn"        data-name="MN8"  data-pitch="803"  data-thick="43"  onclick="selectGrid1(this)">MN8</button>
+          <button class="grid2-btn"        data-name="MN9"  data-pitch="785"  data-thick="61"  onclick="selectGrid1(this)">MN9</button>
+          <button class="grid2-btn"        data-name="MN14" data-pitch="440"  data-thick="68"  onclick="selectGrid1(this)">MN14</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px">
+          <div class="ctrl-row" style="margin:0">
+            <label style="font-size:.7rem">Pitch <span class="unit">µm</span></label>
+            <input type="number" id="inp-grid1-pitch" value="1238" min="100" max="5000" style="width:60px"
+                   oninput="customGrid1()">
+          </div>
+          <div class="ctrl-row" style="margin:0">
+            <label style="font-size:.7rem">Thick <span class="unit">µm</span></label>
+            <input type="number" id="inp-grid1-thick" value="32" min="1" max="200" style="width:60px"
+                   oninput="customGrid1()">
+          </div>
+        </div>
+      </div>
       <div class="grid2-selector">
-        <div class="grid2-selector-label" id="grid2-selector-label">Grid2 type</div>
-        <div class="grid2-btn-group">
-          <button class="grid2-btn" data-name="MN4"  data-pitch="1238" data-thick="32"  onclick="selectGrid2(this)">MN4</button>
+        <div class="grid2-selector-label" id="grid2-selector-label">MCP2 foil (grid2)</div>
+        <div class="grid2-btn-group" id="grid2-btn-group">
+          <button class="grid2-btn"        data-name="MN4"  data-pitch="1238" data-thick="32"  onclick="selectGrid2(this)">MN4</button>
           <button class="grid2-btn active" data-name="MN8"  data-pitch="803"  data-thick="43"  onclick="selectGrid2(this)">MN8</button>
-          <button class="grid2-btn" data-name="MN9"  data-pitch="785"  data-thick="61"  onclick="selectGrid2(this)">MN9</button>
-          <button class="grid2-btn" data-name="MN14" data-pitch="440"  data-thick="68"  onclick="selectGrid2(this)">MN14</button>
+          <button class="grid2-btn"        data-name="MN9"  data-pitch="785"  data-thick="61"  onclick="selectGrid2(this)">MN9</button>
+          <button class="grid2-btn"        data-name="MN14" data-pitch="440"  data-thick="68"  onclick="selectGrid2(this)">MN14</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px">
+          <div class="ctrl-row" style="margin:0">
+            <label style="font-size:.7rem">Pitch <span class="unit">µm</span></label>
+            <input type="number" id="inp-grid2-pitch" value="803" min="100" max="5000" style="width:60px"
+                   oninput="customGrid2()">
+          </div>
+          <div class="ctrl-row" style="margin:0">
+            <label style="font-size:.7rem">Thick <span class="unit">µm</span></label>
+            <input type="number" id="inp-grid2-thick" value="43" min="1" max="200" style="width:60px"
+                   oninput="customGrid2()">
+          </div>
+        </div>
+      </div>
+      <div class="grid2-selector" id="alt-wp-selector" style="display:none; margin-bottom:8px">
+        <div class="grid2-selector-label">MCP2 wire planes (WP6-4) [alt]</div>
+        <div class="grid2-btn-group" id="alt-wp-btn-group">
+          <button class="grid2-btn active" data-name="MN4"  data-pitch="1238" data-thick="32"  onclick="selectAltWp(this)">MN4</button>
+          <button class="grid2-btn"        data-name="MN8"  data-pitch="803"  data-thick="43"  onclick="selectAltWp(this)">MN8</button>
+          <button class="grid2-btn"        data-name="MN9"  data-pitch="785"  data-thick="61"  onclick="selectAltWp(this)">MN9</button>
+          <button class="grid2-btn"        data-name="MN14" data-pitch="440"  data-thick="68"  onclick="selectAltWp(this)">MN14</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px">
+          <div class="ctrl-row" style="margin:0">
+            <label style="font-size:.7rem">Pitch <span class="unit">µm</span></label>
+            <input type="number" id="inp-altwp-pitch" value="1238" min="100" max="5000" style="width:60px"
+                   oninput="customAltWp()">
+          </div>
+          <div class="ctrl-row" style="margin:0">
+            <label style="font-size:.7rem">Thick <span class="unit">µm</span></label>
+            <input type="number" id="inp-altwp-thick" value="32" min="1" max="200" style="width:60px"
+                   oninput="customAltWp()">
+          </div>
         </div>
       </div>
       <div class="analytic-t-block">
         <div class="analytic-t-title">Analytic Transmission (T)</div>
         <div class="analytic-t-row">
-          <span class="at-label">grid1 — MN4 mesh</span>
+          <span class="at-label" id="at-grid1-label">grid1 (MCP1 foil) — MN4</span>
           <span class="at-val" id="at-grid1">—</span>
         </div>
         <div class="analytic-t-row" id="at-wp-row">
@@ -426,11 +480,15 @@
           <span class="at-val" id="at-wp">—</span>
         </div>
         <div class="analytic-t-row">
-          <span class="at-label" id="at-grid2-label">grid2 — MN8 mesh</span>
+          <span class="at-label" id="at-grid2-label">grid2 (MCP2 foil) — MN8</span>
           <span class="at-val" id="at-grid2">—</span>
         </div>
+        <div class="analytic-t-row" id="at-altwp-row" style="display:none">
+          <span class="at-label" id="at-altwp-label">WP6·5·4 plane (alt)</span>
+          <span class="at-val" id="at-altwp">—</span>
+        </div>
         <div class="analytic-t-row" id="at-wires2-row" style="display:none">
-          <span class="at-label">&tau;<sub>wires2</sub> = T³ (WP6·WP5·WP4)</span>
+          <span class="at-label">&tau;<sub>wires2</sub> = T<sub>wp</sub>² &times; 3 planes</span>
           <span class="at-val" id="at-wires2">—</span>
         </div>
       </div>
@@ -763,31 +821,104 @@ function syncSlider(key, value, formatter) {
 /* ════════════════════════════════════════════════════════════════════════════
    PARAMETER COLLECTION
    ════════════════════════════════════════════════════════════════════════════ */
-// Grid2 / alt-mesh selection state
-let _grid2PitchUm = 803, _grid2ThickUm = 43, _grid2Name = 'MN8';
+// Grid1 / Grid2 / Alt-WP selection state
+let _grid1PitchUm = 1238, _grid1ThickUm = 32, _grid1Name = 'MN4';
+let _grid2PitchUm = 803,  _grid2ThickUm = 43, _grid2Name = 'MN8';
+let _altWpPitchUm = 1238, _altWpThickUm = 32, _altWpName = 'MN4';
+
+function selectGrid1(btn) {
+  document.querySelectorAll('#grid1-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _grid1PitchUm = parseInt(btn.dataset.pitch);
+  _grid1ThickUm = parseInt(btn.dataset.thick);
+  _grid1Name    = btn.dataset.name;
+  document.getElementById('inp-grid1-pitch').value = _grid1PitchUm;
+  document.getElementById('inp-grid1-thick').value = _grid1ThickUm;
+  _updateAnalyticTBlock();
+}
+
+function customGrid1() {
+  const p = parseFloat(document.getElementById('inp-grid1-pitch').value);
+  const t = parseFloat(document.getElementById('inp-grid1-thick').value);
+  if (!isNaN(p) && !isNaN(t) && p > 0 && t > 0 && t < p) {
+    _grid1PitchUm = p;
+    _grid1ThickUm = t;
+    document.querySelectorAll('#grid1-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
+    _grid1Name = 'custom';
+    _updateAnalyticTBlock();
+  }
+}
 
 function selectGrid2(btn) {
-  document.querySelectorAll('.grid2-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#grid2-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   _grid2PitchUm = parseInt(btn.dataset.pitch);
   _grid2ThickUm = parseInt(btn.dataset.thick);
   _grid2Name    = btn.dataset.name;
+  document.getElementById('inp-grid2-pitch').value = _grid2PitchUm;
+  document.getElementById('inp-grid2-thick').value = _grid2ThickUm;
   _updateAnalyticTBlock();
   drawGeometryPlots();
 }
 
+function customGrid2() {
+  const p = parseFloat(document.getElementById('inp-grid2-pitch').value);
+  const t = parseFloat(document.getElementById('inp-grid2-thick').value);
+  if (!isNaN(p) && !isNaN(t) && p > 0 && t > 0 && t < p) {
+    _grid2PitchUm = p;
+    _grid2ThickUm = t;
+    document.querySelectorAll('#grid2-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
+    _grid2Name = 'custom';
+    _updateAnalyticTBlock();
+    drawGeometryPlots();
+  }
+}
+
+function selectAltWp(btn) {
+  document.querySelectorAll('#alt-wp-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _altWpPitchUm = parseInt(btn.dataset.pitch);
+  _altWpThickUm = parseInt(btn.dataset.thick);
+  _altWpName    = btn.dataset.name;
+  document.getElementById('inp-altwp-pitch').value = _altWpPitchUm;
+  document.getElementById('inp-altwp-thick').value = _altWpThickUm;
+  _updateAnalyticTBlock();
+  drawGeometryPlots();
+}
+
+function customAltWp() {
+  const p = parseFloat(document.getElementById('inp-altwp-pitch').value);
+  const t = parseFloat(document.getElementById('inp-altwp-thick').value);
+  if (!isNaN(p) && !isNaN(t) && p > 0 && t > 0 && t < p) {
+    _altWpPitchUm = p;
+    _altWpThickUm = t;
+    document.querySelectorAll('#alt-wp-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
+    _altWpName = 'custom';
+    _updateAnalyticTBlock();
+    drawGeometryPlots();
+  }
+}
+
 function _updateAnalyticTBlock() {
-  const T = Math.pow((_grid2PitchUm - _grid2ThickUm) / _grid2PitchUm, 2);
+  const T1   = Math.pow((_grid1PitchUm - _grid1ThickUm) / _grid1PitchUm, 2);
+  const T2   = Math.pow((_grid2PitchUm - _grid2ThickUm) / _grid2PitchUm, 2);
+  const Twp  = Math.pow((_altWpPitchUm - _altWpThickUm) / _altWpPitchUm, 2);
+  document.getElementById('at-grid1-label').textContent = `grid1 (MCP1 foil) — ${_grid1Name}`;
+  document.getElementById('at-grid1').textContent = T1.toFixed(5);
   if (_altMode) {
-    document.getElementById('at-grid2-label').textContent = `MCP2 planes — ${_grid2Name} mesh`;
-    document.getElementById('at-wp-row').style.display = '';   // show cyl. WP T
+    document.getElementById('at-grid2-label').textContent = `grid2 (MCP2 foil) — ${_grid2Name}`;
+    document.getElementById('at-altwp-label').textContent = `WP6·5·4 plane (alt) — ${_altWpName}`;
+    document.getElementById('at-wp-row').style.display = '';
+    document.getElementById('at-altwp-row').style.display = '';
     document.getElementById('at-wires2-row').style.display = '';
-    document.getElementById('at-wires2').textContent = Math.pow(T, 3).toFixed(5);
+    document.getElementById('at-altwp').textContent = Twp.toFixed(5);
+    document.getElementById('at-wires2').textContent = Math.pow(Twp, 3).toFixed(5);
   } else {
-    document.getElementById('at-grid2-label').textContent = `grid2 — ${_grid2Name} mesh`;
+    document.getElementById('at-grid2-label').textContent = `grid2 (MCP2 foil) — ${_grid2Name}`;
+    document.getElementById('at-altwp-row').style.display = 'none';
     document.getElementById('at-wires2-row').style.display = 'none';
   }
-  document.getElementById('at-grid2').textContent = T.toFixed(5);
+  document.getElementById('at-grid2').textContent = T2.toFixed(5);
 }
 
 function toggleMode() {
@@ -799,26 +930,32 @@ function toggleMode() {
     btn.style.borderColor = '#7c3aed';
     btn.style.color = '#c4b5fd';
     badge.style.display = '';
-    // Switch grid2 selector to MN4 default
-    document.getElementById('grid2-selector-label').textContent = 'MCP2 mesh type (all planes)';
-    const mn4btn = document.querySelector('.grid2-btn[data-name="MN4"]');
+    document.getElementById('alt-wp-selector').style.display = '';
+    // Switch grid2 selector label for alt mode
+    document.getElementById('grid2-selector-label').textContent = 'MCP2 foil (grid2) [alt]';
+    const mn4btn = document.querySelector('#grid2-btn-group .grid2-btn[data-name="MN4"]');
     if (mn4btn && _grid2Name !== 'MN4') {
-      document.querySelectorAll('.grid2-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#grid2-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
       mn4btn.classList.add('active');
       _grid2PitchUm = 1238; _grid2ThickUm = 32; _grid2Name = 'MN4';
+      document.getElementById('inp-grid2-pitch').value = 1238;
+      document.getElementById('inp-grid2-thick').value = 32;
     }
   } else {
     btn.style.background = '#0c1020';
     btn.style.borderColor = '#2a3560';
     btn.style.color = '#6b7a99';
     badge.style.display = 'none';
-    document.getElementById('grid2-selector-label').textContent = 'Grid2 type';
+    document.getElementById('alt-wp-selector').style.display = 'none';
+    document.getElementById('grid2-selector-label').textContent = 'MCP2 foil (grid2)';
     // Restore MN8 default
-    const mn8btn = document.querySelector('.grid2-btn[data-name="MN8"]');
+    const mn8btn = document.querySelector('#grid2-btn-group .grid2-btn[data-name="MN8"]');
     if (mn8btn) {
-      document.querySelectorAll('.grid2-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#grid2-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
       mn8btn.classList.add('active');
       _grid2PitchUm = 803; _grid2ThickUm = 43; _grid2Name = 'MN8';
+      document.getElementById('inp-grid2-pitch').value = 803;
+      document.getElementById('inp-grid2-thick').value = 43;
     }
   }
   _updateAnalyticTBlock();
@@ -870,8 +1007,12 @@ function getParams() {
     seed:             seedRaw === '' ? null : parseInt(seedRaw),
     relativistic:     document.getElementById('chk-relativistic').checked,
     fill_ic_detected: document.getElementById('chk-ic-det').checked,
+    grid1_pitch_um:   _grid1PitchUm,
+    grid1_thick_um:   _grid1ThickUm,
     grid2_pitch_um:   _grid2PitchUm,
     grid2_thick_um:   _grid2ThickUm,
+    alt_wp_pitch_um:  _altWpPitchUm,
+    alt_wp_thick_um:  _altWpThickUm,
     alt_mode:         _altMode,
   };
 }
@@ -1102,7 +1243,7 @@ function renderDerivedQuantities(s) {
     icEffLabel   = 'Coincidence events / (TOF recorded × τ_wires2)';
     icEffFormula = `N_coin / (N_TOF × τ_wires2)\n= ${fmt(s.N_coin_TOF_IC)} / (${fmt(s.N_tof_recorded)} × ${tau_w2.toFixed(4)})`;
     icEffValue   = pct(s.N_tof_recorded > 0 ? s.N_coin_TOF_IC / denom : 0);
-    icEffCounts  = `τ_wires2 = T³ = ${tau_w2.toFixed(4)};  denom = ${denom.toFixed(1)}`;
+    icEffCounts  = `τ_wires2 = T_wp²×³ = ${tau_w2.toFixed(4)};  denom = ${denom.toFixed(1)}`;
   } else {
     const T_g2  = s.grid2_analytic_T;
     const denom = s.N_tof_recorded * T_g2;
@@ -1441,25 +1582,27 @@ function drawBeamline() {
    PLANE GEOMETRY Z-VIEW PLOTS
    ════════════════════════════════════════════════════════════════════════════ */
 function drawGeometryPlots() {
+  const g1P = _grid1PitchUm / 1000, g1Label = _grid1Name;
   const meshP = _grid2PitchUm / 1000, meshLabel = _grid2Name;
+  const altWpP = _altWpPitchUm / 1000, altWpLabel = _altWpName;
   const origPlanes = [
-    { id: 'geo-grid1', label: 'Grid1', z: 0.000, type: 'mesh',     pitch: 1.238, color: '#3b82f6' },
-    { id: 'geo-wp1',   label: 'WP1',   z: 0.010, type: 'vertical', pitch: 1.000, color: '#64748b' },
-    { id: 'geo-wp2',   label: 'WP2',   z: 0.035, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
-    { id: 'geo-wp3',   label: 'WP3',   z: 0.037, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
-    { id: 'geo-wp4',   label: 'WP4',   z: 0.481, type: 'vertical', pitch: 1.000, color: '#64748b', tilt: '−45° to z' },
-    { id: 'geo-wp5',   label: 'WP5',   z: 0.483, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '−45° to z' },
-    { id: 'geo-wp6',   label: 'WP6',   z: 0.508, type: 'vertical', pitch: 1.000, color: '#64748b' },
+    { id: 'geo-grid1', label: `Grid1 · ${g1Label}`, z: 0.000, type: 'mesh',     pitch: g1P,   color: '#3b82f6' },
+    { id: 'geo-wp1',   label: 'WP1',                z: 0.010, type: 'vertical', pitch: 1.000, color: '#64748b' },
+    { id: 'geo-wp2',   label: 'WP2',                z: 0.035, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp3',   label: 'WP3',                z: 0.037, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp4',   label: 'WP4',                z: 0.481, type: 'vertical', pitch: 1.000, color: '#64748b', tilt: '−45° to z' },
+    { id: 'geo-wp5',   label: 'WP5',                z: 0.483, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '−45° to z' },
+    { id: 'geo-wp6',   label: 'WP6',                z: 0.508, type: 'vertical', pitch: 1.000, color: '#64748b' },
     { id: 'geo-grid2', label: `Grid2 · ${meshLabel}`, z: 0.520, type: 'mesh', pitch: meshP, color: '#8b5cf6' },
   ];
   const altPlanes = [
-    { id: 'geo-grid1', label: 'Grid1',           z: 0.000,  type: 'mesh',     pitch: 1.238, color: '#3b82f6' },
-    { id: 'geo-wp1',   label: 'WP1',             z: 0.010,  type: 'vertical', pitch: 1.000, color: '#64748b' },
-    { id: 'geo-wp2',   label: 'WP2',             z: 0.035,  type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
-    { id: 'geo-wp3',   label: 'WP3',             z: 0.037,  type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
-    { id: 'geo-wp4',   label: `WP4 · ${meshLabel}`, z: 0.559, type: 'mesh', pitch: meshP, color: '#a78bfa', tilt: '+45° to z' },
-    { id: 'geo-wp5',   label: `WP5 · ${meshLabel}`, z: 0.557, type: 'mesh', pitch: meshP, color: '#a78bfa', tilt: '+45° to z' },
-    { id: 'geo-wp6',   label: `WP6 · ${meshLabel}`, z: 0.532, type: 'mesh', pitch: meshP, color: '#a78bfa' },
+    { id: 'geo-grid1', label: `Grid1 · ${g1Label}`,  z: 0.000, type: 'mesh',     pitch: g1P,   color: '#3b82f6' },
+    { id: 'geo-wp1',   label: 'WP1',                  z: 0.010, type: 'vertical', pitch: 1.000, color: '#64748b' },
+    { id: 'geo-wp2',   label: 'WP2',                  z: 0.035, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp3',   label: 'WP3',                  z: 0.037, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp4',   label: `WP4 · ${altWpLabel}`,   z: 0.559, type: 'mesh', pitch: altWpP, color: '#a78bfa', tilt: '+45° to z' },
+    { id: 'geo-wp5',   label: `WP5 · ${altWpLabel}`,   z: 0.557, type: 'mesh', pitch: altWpP, color: '#a78bfa', tilt: '+45° to z' },
+    { id: 'geo-wp6',   label: `WP6 · ${altWpLabel}`,   z: 0.532, type: 'mesh', pitch: altWpP, color: '#a78bfa' },
     { id: 'geo-grid2', label: `Grid2 · ${meshLabel}`, z: 0.520, type: 'mesh', pitch: meshP, color: '#8b5cf6' },
   ];
   const planes = _altMode ? altPlanes : origPlanes;
@@ -1582,13 +1725,12 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('lbl-offset_amp').textContent = '0.50 mm';
   document.getElementById('lbl-tof_fwhm').textContent   = '400 ps';
 
-  // Analytic transmission — grid1 and WP are fixed; grid2/alt-mesh updates with selector
+  // Analytic transmission — initialise all values from current state
   (function() {
     function analyticT(pitch, thick, axes) {
       return Math.pow((pitch - thick) / pitch, axes);
     }
-    document.getElementById('at-grid1').textContent = analyticT(1238e-6, 32e-6, 2).toFixed(5);
-    document.getElementById('at-wp').textContent    = analyticT(1000e-6, 20e-6, 1).toFixed(5);
+    document.getElementById('at-wp').textContent = analyticT(1000e-6, 20e-6, 1).toFixed(5);
   })();
   _updateAnalyticTBlock();
 

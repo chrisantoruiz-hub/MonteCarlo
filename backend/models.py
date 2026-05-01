@@ -81,7 +81,17 @@ class SimParams(BaseModel):
         description="Gaussian timing resolution of TOF_MCP (FWHM in ps; 0 = ideal)",
     )
 
-    # Grid2 mesh type (selectable)
+    # Grid1 mesh type (MCP1 foil — selectable)
+    grid1_pitch_um: float = Field(
+        default=1238.0, ge=100.0, le=5000.0,
+        description="Grid1 mesh pitch (µm); default = MN4",
+    )
+    grid1_thick_um: float = Field(
+        default=32.0, ge=1.0, le=200.0,
+        description="Grid1 wire thickness (µm); default = MN4",
+    )
+
+    # Grid2 mesh type (MCP2 foil — selectable)
     grid2_pitch_um: float = Field(
         default=803.0, ge=100.0, le=5000.0,
         description="Grid2 mesh pitch (µm); default = MN8",
@@ -89,6 +99,16 @@ class SimParams(BaseModel):
     grid2_thick_um: float = Field(
         default=43.0, ge=1.0, le=200.0,
         description="Grid2 wire thickness (µm); default = MN8",
+    )
+
+    # MCP2 wire planes mesh (WP6/5/4 in alt mode only — square mesh, independent of grid2)
+    alt_wp_pitch_um: float = Field(
+        default=1238.0, ge=100.0, le=5000.0,
+        description="MCP2 wire plane mesh pitch (µm) in alt mode; default = MN4",
+    )
+    alt_wp_thick_um: float = Field(
+        default=32.0, ge=1.0, le=200.0,
+        description="MCP2 wire plane mesh thickness (µm) in alt mode; default = MN4",
     )
 
     # Alternative geometry
@@ -191,7 +211,8 @@ class SimStats(BaseModel):
 
     # Alt-geometry fields (present in both modes; default 0/False for original)
     alt_mode: bool = False
-    alt_wires2_T: float = 0.0   # τ_wires2 = T_mesh^3 for WP6+WP5+WP4 (alt only)
+    alt_wires2_T: float = 0.0       # τ_wires2 = T_wp^6 for WP6+WP5+WP4 (alt only)
+    alt_wp_analytic_T: float = 0.0  # single-plane T² for alt WP mesh (alt only)
 
     # Legacy union stats (kept for three-card panel)
     N_tof_or_ic: int

@@ -213,14 +213,20 @@ def simulate(params: SimParams) -> SimResult:
         if params.alt_mode:
             hists_raw, stats_raw, scatter_raw, hist2d_raw, offsets = run_simulation_alt(
                 **common_kwargs,
+                grid1_pitch=params.grid1_pitch_um * 1e-6,
+                grid1_thick=params.grid1_thick_um * 1e-6,
                 alt_mesh_pitch=params.grid2_pitch_um * 1e-6,
                 alt_mesh_thick=params.grid2_thick_um * 1e-6,
+                alt_wp_pitch=params.alt_wp_pitch_um * 1e-6,
+                alt_wp_thick=params.alt_wp_thick_um * 1e-6,
             )
             pnames = ALT_PLANE_NAMES
             pz     = ALT_PLANE_Z
         else:
             hists_raw, stats_raw, scatter_raw, hist2d_raw, offsets = run_simulation(
                 **common_kwargs,
+                grid1_pitch=params.grid1_pitch_um * 1e-6,
+                grid1_thick=params.grid1_thick_um * 1e-6,
                 grid2_pitch=params.grid2_pitch_um * 1e-6,
                 grid2_thick=params.grid2_thick_um * 1e-6,
             )
