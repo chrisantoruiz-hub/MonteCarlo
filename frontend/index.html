@@ -1669,7 +1669,6 @@ function drawBeamline() {
 function drawGeometryPlots() {
   const g1P = _grid1PitchUm / 1000, g1Label = _grid1Name;
   const meshP = _grid2PitchUm / 1000, meshLabel = _grid2Name;
-  const altWpP = _altWpPitchUm / 1000, altWpLabel = _altWpName;
   const origPlanes = [
     { id: 'geo-grid1', label: `Grid1 · ${g1Label}`, z: 0.000, type: 'mesh',     pitch: g1P,   color: '#3b82f6' },
     { id: 'geo-wp1',   label: 'WP1',                z: 0.010, type: 'vertical', pitch: 1.000, color: '#64748b' },

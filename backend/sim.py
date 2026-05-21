@@ -738,8 +738,10 @@ def run_simulation_alt(
 
     elapsed = time.perf_counter() - t_wall_start
 
-    # τ_wires2 for alt efficiency extraction: three MN mesh planes after grid2
-    alt_wires2_T = analytic_T(alt_wp_pitch, alt_wp_thick, axes=2) ** 3   # τ_wires2 = T_wp²×³
+    # τ_wires2 for alt efficiency extraction: product of three independent MN mesh planes
+    alt_wires2_T = (analytic_T(w6_pitch, w6_thick, axes=2) *
+                    analytic_T(w5_pitch, w5_thick, axes=2) *
+                    analytic_T(w4_pitch, w4_thick, axes=2))
 
     stats = dict(
         N_generated              = n_gen,
@@ -783,7 +785,7 @@ def run_simulation_alt(
         grid1_analytic_T         = analytic_T(grid1_pitch, grid1_thick, axes=2),
         wp_analytic_T_per_plane  = analytic_T(WP_PITCH, WP_THICK, axes=1),
         grid2_analytic_T         = analytic_T(alt_mesh_pitch, alt_mesh_thick, axes=2),
-        alt_wp_analytic_T        = analytic_T(alt_wp_pitch, alt_wp_thick, axes=2),
+        alt_wp_analytic_T        = alt_wires2_T,
         elapsed_s                = elapsed,
 
         # Alt-specific fields
