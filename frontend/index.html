@@ -259,6 +259,18 @@
     }
     .grid2-btn:hover { border-color: #2563eb; color: #93c5fd; }
     .grid2-btn.active { background: #1e3a5a; border-color: #3b82f6; color: #93c5fd; font-weight: 700; }
+    .mesh-inputs {
+      display: flex; gap: 6px; margin-top: 5px; align-items: center;
+    }
+    .mesh-inputs label {
+      font-size: .65rem; color: #4a6fa5; white-space: nowrap;
+    }
+    .mesh-inputs input[type=number] {
+      width: 64px; padding: 3px 5px;
+      background: #0c1020; border: 1px solid #1e2640; border-radius: 4px;
+      color: #93c5fd; font-size: .72rem; font-family: 'Courier New', monospace;
+    }
+    .mesh-inputs input[type=number]:focus { outline: none; border-color: #3b82f6; }
 
     /* Tab bar */
     .tab-bar {
@@ -469,6 +481,54 @@
           </div>
         </div>
       </div>
+      <div class="grid2-selector alt-plane-selector" id="w6-selector" style="display:none">
+        <div class="grid2-selector-label">W6 mesh type</div>
+        <div class="grid2-btn-group">
+          <button class="grid2-btn w6-btn active" data-name="MN4"  data-pitch="1238" data-thick="32"  onclick="selectWPMesh('w6',this)">MN4</button>
+          <button class="grid2-btn w6-btn"         data-name="MN8"  data-pitch="803"  data-thick="43"  onclick="selectWPMesh('w6',this)">MN8</button>
+          <button class="grid2-btn w6-btn"         data-name="MN9"  data-pitch="785"  data-thick="61"  onclick="selectWPMesh('w6',this)">MN9</button>
+          <button class="grid2-btn w6-btn"         data-name="MN14" data-pitch="440"  data-thick="68"  onclick="selectWPMesh('w6',this)">MN14</button>
+        </div>
+        <div class="mesh-inputs">
+          <label>pitch</label>
+          <input type="number" id="inp-w6-pitch" min="100" max="5000" value="1238" oninput="onMeshInput('w6')">
+          <label>µm &nbsp; width</label>
+          <input type="number" id="inp-w6-thick" min="1"   max="200"  value="32"   oninput="onMeshInput('w6')">
+          <label>µm</label>
+        </div>
+      </div>
+      <div class="grid2-selector alt-plane-selector" id="w5-selector" style="display:none">
+        <div class="grid2-selector-label">W5 mesh type</div>
+        <div class="grid2-btn-group">
+          <button class="grid2-btn w5-btn active" data-name="MN4"  data-pitch="1238" data-thick="32"  onclick="selectWPMesh('w5',this)">MN4</button>
+          <button class="grid2-btn w5-btn"         data-name="MN8"  data-pitch="803"  data-thick="43"  onclick="selectWPMesh('w5',this)">MN8</button>
+          <button class="grid2-btn w5-btn"         data-name="MN9"  data-pitch="785"  data-thick="61"  onclick="selectWPMesh('w5',this)">MN9</button>
+          <button class="grid2-btn w5-btn"         data-name="MN14" data-pitch="440"  data-thick="68"  onclick="selectWPMesh('w5',this)">MN14</button>
+        </div>
+        <div class="mesh-inputs">
+          <label>pitch</label>
+          <input type="number" id="inp-w5-pitch" min="100" max="5000" value="1238" oninput="onMeshInput('w5')">
+          <label>µm &nbsp; width</label>
+          <input type="number" id="inp-w5-thick" min="1"   max="200"  value="32"   oninput="onMeshInput('w5')">
+          <label>µm</label>
+        </div>
+      </div>
+      <div class="grid2-selector alt-plane-selector" id="w4-selector" style="display:none">
+        <div class="grid2-selector-label">W4 mesh type</div>
+        <div class="grid2-btn-group">
+          <button class="grid2-btn w4-btn active" data-name="MN4"  data-pitch="1238" data-thick="32"  onclick="selectWPMesh('w4',this)">MN4</button>
+          <button class="grid2-btn w4-btn"         data-name="MN8"  data-pitch="803"  data-thick="43"  onclick="selectWPMesh('w4',this)">MN8</button>
+          <button class="grid2-btn w4-btn"         data-name="MN9"  data-pitch="785"  data-thick="61"  onclick="selectWPMesh('w4',this)">MN9</button>
+          <button class="grid2-btn w4-btn"         data-name="MN14" data-pitch="440"  data-thick="68"  onclick="selectWPMesh('w4',this)">MN14</button>
+        </div>
+        <div class="mesh-inputs">
+          <label>pitch</label>
+          <input type="number" id="inp-w4-pitch" min="100" max="5000" value="1238" oninput="onMeshInput('w4')">
+          <label>µm &nbsp; width</label>
+          <input type="number" id="inp-w4-thick" min="1"   max="200"  value="32"   oninput="onMeshInput('w4')">
+          <label>µm</label>
+        </div>
+      </div>
       <div class="analytic-t-block">
         <div class="analytic-t-title">Analytic Transmission (T)</div>
         <div class="analytic-t-row">
@@ -483,12 +543,8 @@
           <span class="at-label" id="at-grid2-label">grid2 (MCP2 foil) — MN8</span>
           <span class="at-val" id="at-grid2">—</span>
         </div>
-        <div class="analytic-t-row" id="at-altwp-row" style="display:none">
-          <span class="at-label" id="at-altwp-label">WP6·5·4 plane (alt)</span>
-          <span class="at-val" id="at-altwp">—</span>
-        </div>
         <div class="analytic-t-row" id="at-wires2-row" style="display:none">
-          <span class="at-label">&tau;<sub>wires2</sub> = T<sub>wp</sub>² &times; 3 planes</span>
+          <span class="at-label">&tau;<sub>wires2</sub> = T<sub>W6</sub>&middot;T<sub>W5</sub>&middot;T<sub>W4</sub></span>
           <span class="at-val" id="at-wires2">—</span>
         </div>
       </div>
@@ -821,10 +877,19 @@ function syncSlider(key, value, formatter) {
 /* ════════════════════════════════════════════════════════════════════════════
    PARAMETER COLLECTION
    ════════════════════════════════════════════════════════════════════════════ */
-// Grid1 / Grid2 / Alt-WP selection state
+// Grid1 / Grid2 / per-plane W6/W5/W4 selection state
 let _grid1PitchUm = 1238, _grid1ThickUm = 32, _grid1Name = 'MN4';
 let _grid2PitchUm = 803,  _grid2ThickUm = 43, _grid2Name = 'MN8';
-let _altWpPitchUm = 1238, _altWpThickUm = 32, _altWpName = 'MN4';
+let _w6PitchUm = 1238, _w6ThickUm = 32, _w6Name = 'MN4';
+let _w5PitchUm = 1238, _w5ThickUm = 32, _w5Name = 'MN4';
+let _w4PitchUm = 1238, _w4ThickUm = 32, _w4Name = 'MN4';
+
+function _syncMeshInputs(plane, pitchUm, thickUm) {
+  const pi = document.getElementById(`inp-${plane}-pitch`);
+  const ti = document.getElementById(`inp-${plane}-thick`);
+  if (pi) pi.value = pitchUm;
+  if (ti) ti.value = thickUm;
+}
 
 function selectGrid1(btn) {
   document.querySelectorAll('#grid1-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
@@ -874,51 +939,53 @@ function customGrid2() {
   }
 }
 
-function selectAltWp(btn) {
-  document.querySelectorAll('#alt-wp-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
+function selectWPMesh(plane, btn) {
+  document.querySelectorAll(`.${plane}-btn`).forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  _altWpPitchUm = parseInt(btn.dataset.pitch);
-  _altWpThickUm = parseInt(btn.dataset.thick);
-  _altWpName    = btn.dataset.name;
-  document.getElementById('inp-altwp-pitch').value = _altWpPitchUm;
-  document.getElementById('inp-altwp-thick').value = _altWpThickUm;
+  if (plane === 'w6') { _w6PitchUm = parseInt(btn.dataset.pitch); _w6ThickUm = parseInt(btn.dataset.thick); _w6Name = btn.dataset.name; }
+  else if (plane === 'w5') { _w5PitchUm = parseInt(btn.dataset.pitch); _w5ThickUm = parseInt(btn.dataset.thick); _w5Name = btn.dataset.name; }
+  else if (plane === 'w4') { _w4PitchUm = parseInt(btn.dataset.pitch); _w4ThickUm = parseInt(btn.dataset.thick); _w4Name = btn.dataset.name; }
+  _syncMeshInputs(plane, parseInt(btn.dataset.pitch), parseInt(btn.dataset.thick));
   _updateAnalyticTBlock();
   drawGeometryPlots();
 }
 
-function customAltWp() {
-  const p = parseFloat(document.getElementById('inp-altwp-pitch').value);
-  const t = parseFloat(document.getElementById('inp-altwp-thick').value);
-  if (!isNaN(p) && !isNaN(t) && p > 0 && t > 0 && t < p) {
-    _altWpPitchUm = p;
-    _altWpThickUm = t;
-    document.querySelectorAll('#alt-wp-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
-    _altWpName = 'custom';
-    _updateAnalyticTBlock();
-    drawGeometryPlots();
-  }
+function onMeshInput(plane) {
+  const pitchEl = document.getElementById(`inp-${plane}-pitch`);
+  const thickEl = document.getElementById(`inp-${plane}-thick`);
+  const p = parseInt(pitchEl.value);
+  const t = parseInt(thickEl.value);
+  if (!p || !t || p < 1 || t < 1 || t >= p) return;
+  document.querySelectorAll(`.${plane}-btn`).forEach(b => b.classList.remove('active'));
+  if (plane === 'w6') { _w6PitchUm = p; _w6ThickUm = t; _w6Name = 'custom'; }
+  else if (plane === 'w5') { _w5PitchUm = p; _w5ThickUm = t; _w5Name = 'custom'; }
+  else if (plane === 'w4') { _w4PitchUm = p; _w4ThickUm = t; _w4Name = 'custom'; }
+  _updateAnalyticTBlock();
+  drawGeometryPlots();
+}
+
+function _meshT(pitchUm, thickUm) {
+  return Math.pow((pitchUm - thickUm) / pitchUm, 2);
 }
 
 function _updateAnalyticTBlock() {
-  const T1   = Math.pow((_grid1PitchUm - _grid1ThickUm) / _grid1PitchUm, 2);
-  const T2   = Math.pow((_grid2PitchUm - _grid2ThickUm) / _grid2PitchUm, 2);
-  const Twp  = Math.pow((_altWpPitchUm - _altWpThickUm) / _altWpPitchUm, 2);
+  const T1  = _meshT(_grid1PitchUm, _grid1ThickUm);
+  const Tg2 = _meshT(_grid2PitchUm, _grid2ThickUm);
   document.getElementById('at-grid1-label').textContent = `grid1 (MCP1 foil) — ${_grid1Name}`;
   document.getElementById('at-grid1').textContent = T1.toFixed(5);
   if (_altMode) {
     document.getElementById('at-grid2-label').textContent = `grid2 (MCP2 foil) — ${_grid2Name}`;
-    document.getElementById('at-altwp-label').textContent = `WP6·5·4 plane (alt) — ${_altWpName}`;
     document.getElementById('at-wp-row').style.display = '';
-    document.getElementById('at-altwp-row').style.display = '';
     document.getElementById('at-wires2-row').style.display = '';
-    document.getElementById('at-altwp').textContent = Twp.toFixed(5);
-    document.getElementById('at-wires2').textContent = Math.pow(Twp, 3).toFixed(5);
+    const Tw6 = _meshT(_w6PitchUm, _w6ThickUm);
+    const Tw5 = _meshT(_w5PitchUm, _w5ThickUm);
+    const Tw4 = _meshT(_w4PitchUm, _w4ThickUm);
+    document.getElementById('at-wires2').textContent = (Tw6 * Tw5 * Tw4).toFixed(5);
   } else {
     document.getElementById('at-grid2-label').textContent = `grid2 (MCP2 foil) — ${_grid2Name}`;
-    document.getElementById('at-altwp-row').style.display = 'none';
     document.getElementById('at-wires2-row').style.display = 'none';
   }
-  document.getElementById('at-grid2').textContent = T2.toFixed(5);
+  document.getElementById('at-grid2').textContent = Tg2.toFixed(5);
 }
 
 function toggleMode() {
@@ -930,9 +997,8 @@ function toggleMode() {
     btn.style.borderColor = '#7c3aed';
     btn.style.color = '#c4b5fd';
     badge.style.display = '';
-    document.getElementById('alt-wp-selector').style.display = '';
-    // Switch grid2 selector label for alt mode
     document.getElementById('grid2-selector-label').textContent = 'MCP2 foil (grid2) [alt]';
+    // Switch grid2 to MN4 default
     const mn4btn = document.querySelector('#grid2-btn-group .grid2-btn[data-name="MN4"]');
     if (mn4btn && _grid2Name !== 'MN4') {
       document.querySelectorAll('#grid2-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
@@ -941,14 +1007,25 @@ function toggleMode() {
       document.getElementById('inp-grid2-pitch').value = 1238;
       document.getElementById('inp-grid2-thick').value = 32;
     }
+    // Show per-plane W6/W5/W4 selectors and reset to MN4
+    ['w6', 'w5', 'w4'].forEach(plane => {
+      document.getElementById(`${plane}-selector`).style.display = '';
+      document.querySelectorAll(`.${plane}-btn`).forEach(b => b.classList.remove('active'));
+      document.querySelector(`.${plane}-btn[data-name="MN4"]`).classList.add('active');
+    });
+    _w6PitchUm = 1238; _w6ThickUm = 32; _w6Name = 'MN4';
+    _w5PitchUm = 1238; _w5ThickUm = 32; _w5Name = 'MN4';
+    _w4PitchUm = 1238; _w4ThickUm = 32; _w4Name = 'MN4';
+    _syncMeshInputs('w6', 1238, 32);
+    _syncMeshInputs('w5', 1238, 32);
+    _syncMeshInputs('w4', 1238, 32);
   } else {
     btn.style.background = '#0c1020';
     btn.style.borderColor = '#2a3560';
     btn.style.color = '#6b7a99';
     badge.style.display = 'none';
-    document.getElementById('alt-wp-selector').style.display = 'none';
     document.getElementById('grid2-selector-label').textContent = 'MCP2 foil (grid2)';
-    // Restore MN8 default
+    // Restore MN8 default for grid2
     const mn8btn = document.querySelector('#grid2-btn-group .grid2-btn[data-name="MN8"]');
     if (mn8btn) {
       document.querySelectorAll('#grid2-btn-group .grid2-btn').forEach(b => b.classList.remove('active'));
@@ -957,6 +1034,10 @@ function toggleMode() {
       document.getElementById('inp-grid2-pitch').value = 803;
       document.getElementById('inp-grid2-thick').value = 43;
     }
+    // Hide per-plane W6/W5/W4 selectors
+    ['w6', 'w5', 'w4'].forEach(plane => {
+      document.getElementById(`${plane}-selector`).style.display = 'none';
+    });
   }
   _updateAnalyticTBlock();
   // Update beamline title and diagrams
@@ -1011,8 +1092,12 @@ function getParams() {
     grid1_thick_um:   _grid1ThickUm,
     grid2_pitch_um:   _grid2PitchUm,
     grid2_thick_um:   _grid2ThickUm,
-    alt_wp_pitch_um:  _altWpPitchUm,
-    alt_wp_thick_um:  _altWpThickUm,
+    w6_pitch_um:      _w6PitchUm,
+    w6_thick_um:      _w6ThickUm,
+    w5_pitch_um:      _w5PitchUm,
+    w5_thick_um:      _w5ThickUm,
+    w4_pitch_um:      _w4PitchUm,
+    w4_thick_um:      _w4ThickUm,
     alt_mode:         _altMode,
   };
 }
@@ -1596,13 +1681,13 @@ function drawGeometryPlots() {
     { id: 'geo-grid2', label: `Grid2 · ${meshLabel}`, z: 0.520, type: 'mesh', pitch: meshP, color: '#8b5cf6' },
   ];
   const altPlanes = [
-    { id: 'geo-grid1', label: `Grid1 · ${g1Label}`,  z: 0.000, type: 'mesh',     pitch: g1P,   color: '#3b82f6' },
-    { id: 'geo-wp1',   label: 'WP1',                  z: 0.010, type: 'vertical', pitch: 1.000, color: '#64748b' },
-    { id: 'geo-wp2',   label: 'WP2',                  z: 0.035, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
-    { id: 'geo-wp3',   label: 'WP3',                  z: 0.037, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
-    { id: 'geo-wp4',   label: `WP4 · ${altWpLabel}`,   z: 0.559, type: 'mesh', pitch: altWpP, color: '#a78bfa', tilt: '+45° to z' },
-    { id: 'geo-wp5',   label: `WP5 · ${altWpLabel}`,   z: 0.557, type: 'mesh', pitch: altWpP, color: '#a78bfa', tilt: '+45° to z' },
-    { id: 'geo-wp6',   label: `WP6 · ${altWpLabel}`,   z: 0.532, type: 'mesh', pitch: altWpP, color: '#a78bfa' },
+    { id: 'geo-grid1', label: `Grid1 · ${g1Label}`, z: 0.000, type: 'mesh',     pitch: g1P,   color: '#3b82f6' },
+    { id: 'geo-wp1',   label: 'WP1',               z: 0.010, type: 'vertical', pitch: 1.000, color: '#64748b' },
+    { id: 'geo-wp2',   label: 'WP2',               z: 0.035, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp3',   label: 'WP3',               z: 0.037, type: 'vertical', pitch: 1.000, color: '#94a3b8', tilt: '+45° to z' },
+    { id: 'geo-wp4',   label: `WP4 · ${_w4Name}`,  z: 0.559, type: 'mesh', pitch: _w4PitchUm / 1000, color: '#a78bfa', tilt: '+45° to z' },
+    { id: 'geo-wp5',   label: `WP5 · ${_w5Name}`,  z: 0.557, type: 'mesh', pitch: _w5PitchUm / 1000, color: '#a78bfa', tilt: '+45° to z' },
+    { id: 'geo-wp6',   label: `WP6 · ${_w6Name}`,  z: 0.532, type: 'mesh', pitch: _w6PitchUm / 1000, color: '#a78bfa' },
     { id: 'geo-grid2', label: `Grid2 · ${meshLabel}`, z: 0.520, type: 'mesh', pitch: meshP, color: '#8b5cf6' },
   ];
   const planes = _altMode ? altPlanes : origPlanes;

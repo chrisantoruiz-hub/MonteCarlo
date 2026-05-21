@@ -101,14 +101,30 @@ class SimParams(BaseModel):
         description="Grid2 wire thickness (µm); default = MN8",
     )
 
-    # MCP2 wire planes mesh (WP6/5/4 in alt mode only — square mesh, independent of grid2)
-    alt_wp_pitch_um: float = Field(
+    # Alt-mode per-plane mesh types for W6, W5, W4 (ignored in standard mode)
+    w6_pitch_um: float = Field(
         default=1238.0, ge=100.0, le=5000.0,
-        description="MCP2 wire plane mesh pitch (µm) in alt mode; default = MN4",
+        description="WP6 mesh pitch (µm) in alt mode; default = MN4",
     )
-    alt_wp_thick_um: float = Field(
+    w6_thick_um: float = Field(
         default=32.0, ge=1.0, le=200.0,
-        description="MCP2 wire plane mesh thickness (µm) in alt mode; default = MN4",
+        description="WP6 wire thickness (µm) in alt mode; default = MN4",
+    )
+    w5_pitch_um: float = Field(
+        default=1238.0, ge=100.0, le=5000.0,
+        description="WP5 mesh pitch (µm) in alt mode; default = MN4",
+    )
+    w5_thick_um: float = Field(
+        default=32.0, ge=1.0, le=200.0,
+        description="WP5 wire thickness (µm) in alt mode; default = MN4",
+    )
+    w4_pitch_um: float = Field(
+        default=1238.0, ge=100.0, le=5000.0,
+        description="WP4 mesh pitch (µm) in alt mode; default = MN4",
+    )
+    w4_thick_um: float = Field(
+        default=32.0, ge=1.0, le=200.0,
+        description="WP4 wire thickness (µm) in alt mode; default = MN4",
     )
 
     # Alternative geometry

@@ -217,8 +217,12 @@ def simulate(params: SimParams) -> SimResult:
                 grid1_thick=params.grid1_thick_um * 1e-6,
                 alt_mesh_pitch=params.grid2_pitch_um * 1e-6,
                 alt_mesh_thick=params.grid2_thick_um * 1e-6,
-                alt_wp_pitch=params.alt_wp_pitch_um * 1e-6,
-                alt_wp_thick=params.alt_wp_thick_um * 1e-6,
+                w6_pitch=params.w6_pitch_um * 1e-6,
+                w6_thick=params.w6_thick_um * 1e-6,
+                w5_pitch=params.w5_pitch_um * 1e-6,
+                w5_thick=params.w5_thick_um * 1e-6,
+                w4_pitch=params.w4_pitch_um * 1e-6,
+                w4_thick=params.w4_thick_um * 1e-6,
             )
             pnames = ALT_PLANE_NAMES
             pz     = ALT_PLANE_Z

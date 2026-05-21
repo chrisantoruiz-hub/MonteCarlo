@@ -566,13 +566,17 @@ def run_simulation_alt(
     grid1_thick: float = GRID1_THICK,
     alt_mesh_pitch: float = GRID1_PITCH,   # MCP2 foil (grid2)
     alt_mesh_thick: float = GRID1_THICK,
-    alt_wp_pitch: float = GRID1_PITCH,     # MCP2 wire planes (WP6/5/4)
-    alt_wp_thick: float = GRID1_THICK,
+    w6_pitch: float = GRID1_PITCH,
+    w6_thick: float = GRID1_THICK,
+    w5_pitch: float = GRID1_PITCH,
+    w5_thick: float = GRID1_THICK,
+    w4_pitch: float = GRID1_PITCH,
+    w4_thick: float = GRID1_THICK,
 ) -> Tuple[Dict, Dict, Dict, Dict, np.ndarray]:
     """
     Alternative geometry: MCP2 reversed.
     Beam order: grid1 → WP1,2,3 → grid2 → WP6,5,4 → IC.
-    Grid2 and WP6,WP5,WP4 all use the same selectable MN square mesh.
+    Grid2 uses alt_mesh_pitch/thick; WP6,WP5,WP4 each use their own pitch/thick.
 
     Key physics difference from original:
     - STOP signal requires passing grid2 wire check (τ_grid2 enters MCP counting equation).
@@ -667,13 +671,13 @@ def run_simulation_alt(
     tof_defined  = start_signal & stop_signal
     alive        = pass_g2.copy()        # only grid2-passers continue
 
-    # ── MCP2 wire planes downstream of grid2 (all MN square mesh) ────────────
+    # ── MCP2 wire planes downstream of grid2 (independent MN square meshes) ─────
     # WP6 at z = Z_GRID2 + 0.012, perpendicular to beam
     z_alt_wp6      = Z_GRID2 + 0.012
     xl_wp6, yl_wp6 = local_xy(z_alt_wp6, O_WP6)
     alive          = alive & aperture_ok(xl_wp6, yl_wp6)
-    hit_wp6        = (wire_hit(xl_wp6, alt_wp_pitch, alt_wp_thick * 0.5) |
-                      wire_hit(yl_wp6, alt_wp_pitch, alt_wp_thick * 0.5))
+    hit_wp6        = (wire_hit(xl_wp6, w6_pitch, w6_thick * 0.5) |
+                      wire_hit(yl_wp6, w6_pitch, w6_thick * 0.5))
     n_wire_wp6     = int((alive & hit_wp6).sum())
     alive          = alive & ~hit_wp6
 
@@ -681,8 +685,8 @@ def run_simulation_alt(
     z_alt_wp5      = Z_GRID2 + 0.037
     xl_wp5, yl_wp5 = local_xy(z_alt_wp5, O_WP5)
     alive          = alive & aperture_ok(xl_wp5, yl_wp5)
-    hit_wp5        = (wire_hit(xl_wp5, alt_wp_pitch, alt_wp_thick * 0.5) |
-                      wire_hit(yl_wp5, alt_wp_pitch, alt_wp_thick * 0.5))
+    hit_wp5        = (wire_hit(xl_wp5, w5_pitch, w5_thick * 0.5) |
+                      wire_hit(yl_wp5, w5_pitch, w5_thick * 0.5))
     n_wire_wp5     = int((alive & hit_wp5).sum())
     alive          = alive & ~hit_wp5
 
@@ -690,8 +694,8 @@ def run_simulation_alt(
     z_alt_wp4      = Z_GRID2 + 0.039
     xl_wp4, yl_wp4 = local_xy(z_alt_wp4, O_WP4)
     alive          = alive & aperture_ok(xl_wp4, yl_wp4)
-    hit_wp4        = (wire_hit(xl_wp4, alt_wp_pitch, alt_wp_thick * 0.5) |
-                      wire_hit(yl_wp4, alt_wp_pitch, alt_wp_thick * 0.5))
+    hit_wp4        = (wire_hit(xl_wp4, w4_pitch, w4_thick * 0.5) |
+                      wire_hit(yl_wp4, w4_pitch, w4_thick * 0.5))
     n_wire_wp4     = int((alive & hit_wp4).sum())
     alive          = alive & ~hit_wp4
 
